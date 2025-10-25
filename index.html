@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark light" />
+
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+
+    <link rel="stylesheet" href="style.css" />
+    <script type="text/javascript" src="Solver.js"></script>
+    <script type="text/javascript" src="CogInventory.js"></script>
+    <script type="text/javascript" src="BoardRenderer.js"></script>
+    <script type="text/javascript" src="PlayerRenderer.js"></script>
+    <script type="text/javascript" src="Paginator.js"></script>
+    
+    <title>Cogtimizer</title>
+  </head>
+  <body>
+    <div class="menucontainer">
+      <ul class="menu">
+        <li id="loaderbtn" class="active"><div><div><div>Loader</div></div></div></li>
+        <li id="cogbtn"><div><div><div>Cogs</div></div></div></li>
+      </ul>
+      <div class="options">
+        <button id="settingsbtn">
+          <div></div>
+          <div>
+            Settings
+            <div class="checkbox"></div>
+          </div>
+          <div></div>
+        </button>
+        <button id="solve" >
+          <div></div>
+          <div id="solvetext">Solve</div>
+          <div></div>
+        </button>
+      </div>
+      <div class="spacer"></div>
+      <div class="crow"></div>
+    </div>
+    <div class="content">
+      <div id="loader">
+      <div class="inputarea">
+        <div>Enter config json or username</div>
+        <textarea type="textarea" id="input" rows="10" cols="100"></textarea>
+        <div>
+          <button id="load" style="max-width: 15ch;">Load</button>
+        </div>
+      </div>
+    </div>
+      <div id="result">
+        <div id="notify">
+          <span>Please</span>
+          <span>load</span>
+          <span>a</span>
+          <span>savegame</span>
+        </div>
+        <div class="info">
+          <div id="spare">---Placeholder---</div>
+          <div id="sparepage"></div>
+          <div class="stats">
+            <span class="buildrate">
+              <h3>Total Build Rate</h3>
+              <p id="buildrate">N/A</p>
+            </span>
+            <span class="xpbonus">
+              <h3>Player XP Bonus</h3>
+              <p id="xpbonus">N/A</p>
+            </span>
+            <span class="flaggyrate">
+              <h3>Flaggy Rate</h3>
+              <p id="flaggyrate">N/A</p>
+            </span>
+          </div>
+        </div>
+        <div class="border" id="border"></div>
+        <div id="settings" style="display: none;">
+          <p>
+            <label for="flaggyShop">Gem Shop Flaggy upgrades</label><br />
+            <input type="number" id="flaggyShop" value="0" style="width:6ch" disabled=true></input>
+          </p>
+          <p>
+            <label for="buildRate">Build rate score weight</label><br />
+            <input type="number" id="buildRate" value="2" style="width:6ch"></input>
+          </p>
+          <p>
+            <label for="expBonus">EXP Bonus score weight</label><br />
+            <input type="number" id="expBonus" value="50" style="width:6ch"></input>
+          </p>
+          <p>
+            <label for="flaggy">Flaggy rate score weight</label><br />
+            <input type="number" id="flaggy" value="5" style="width:6ch"></input>
+          </p>
+          <p>
+            <label for="solveTime">Solve times (ms)</label><br />
+            <input type="number" id="solveTime" value="2500" style="width:10ch"></input>
+          </p>
+          <h4>Misc.</h4>
+          <hr />
+          <p>
+            <label for="showStats">Show cog stats?</label>
+            <input type="checkbox" id="showStats" />
+          </p>
+          <p>
+            <label for="showSolved">Directly show solved board</label>
+            <input type="checkbox" id="showSolved" />
+          </p>
+        </div>
+        <div id="currentBoard">
+        </div>
+        <div id="steps"></div>
+      </div>
+    </div>
+    <p id="start"></p>
+    <p id="end"></p>
+    <script type="text/javascript">
+      function createSwitchAnimation() {
+        let fromDiv,
+            timerID;
+
+        fromDiv = document.createElement("div");
+        document.body.appendChild(fromDiv);
+
+        return function animateSwitch(fromElem, targetBoundingRect) {
+          fromDiv.className = "";
+
+          Object.values(fromElem.style)
+            .filter((v) => !(v in ["height", "width", "position"]))
+            .forEach((key) => {
+              let value = fromElem.style[key];
+              fromDiv.style[key] = value;
+            });
+
+          const bounds = fromElem.getBoundingClientRect();
+          fromDiv.style.width = bounds.width + "px";
+          fromDiv.style.height = bounds.height + "px";
+          fromDiv.style.top = bounds.top + "px";
+          fromDiv.style.left = bounds.left + "px";
+          
+          clearTimeout(timerID);
+          timerID = setTimeout(() => {
+            fromDiv.className = "switch";
+
+            const bounds = targetBoundingRect;
+            fromDiv.style.width = bounds.width + "px";
+            fromDiv.style.height = bounds.height + "px";
+            fromDiv.style.top = bounds.top + "px";
+            fromDiv.style.left = bounds.left + "px";
+          }, 10);
+        }
+      }
+
+      const animateSwitchFrom = createSwitchAnimation();
+      const animateSwitchTo = createSwitchAnimation();
+
+      const player = new PlayerRenderer();
+      window.player = player;
+
+      const ROWS = 8;
+      const COLUMNS = 12;
+      const OPTIMIZABLE = ["buildRate", "expBonus", "flaggy"];
+      
+      const getInput = (id) => Number.parseInt(document.getElementById(id).value);
+      const getFlaggyShop = getInput.bind(null, "flaggyShop");
+
+      const createElem = function createElem(tagName, style=undefined) {
+        const elem = document.createElement(tagName);
+        if (style) {
+          elem.style = style;
+        }
+        return elem;
+      }
+      
+      window.g = {
+        cogs: {},
+        board: [],
+        best: null
+      };
+      window.f = {};
+
+      window.boardRenderer = new BoardRenderer(ROWS, COLUMNS, "board");
+      window.spareRenderer = new BoardRenderer(40, 3, "spare", 5);
+      window.solver = new Solver();
+      window.cogInvetory = new CogInventory();
+
+      window.sparePage = new Paginator("sparepage", window.spareRenderer._pageCount, 1);
+      window.sparePage.addEventListener("change", (ev) => {
+        window.spareRenderer.showPage(ev.page);
+      });
+
+      const boardElem = document.getElementById("currentBoard");
+      boardElem.innerHTML = "";
+      // boardElem.appendChild(table);
+      boardElem.appendChild(window.boardRenderer.createHTMLElement());
+
+      const stepContainer = createElem("div");
+      stepContainer.id = "stepspage";
+      boardElem.appendChild(stepContainer);
+      const stepsPage = new Paginator("stepspage", 0, 0, "Step");
+      stepsPage.addEventListener("change", stepsChangeHandler);
+
+      window.addEventListener("keyup", (ev) => {
+        if (ev.key == "ArrowLeft") {
+          stepsPage.prev(ev);
+        } else if (ev.key == "ArrowRight") {
+          stepsPage.next(ev);
+        }
+      }, true);
+
+      const spareElem = document.getElementById("spare");
+      const spareParent = spareElem.parentNode;
+      spareParent.insertBefore(window.spareRenderer.createHTMLElement(), spareElem);
+      spareParent.removeChild(spareElem);
+
+      const settingsBtn = document.getElementById("settingsbtn");
+      const slider = settingsBtn.childNodes[3].childNodes[1];
+      const settingsPage = document.getElementById("settings");
+      const borderElem = document.getElementById("border");
+      settingsBtn.addEventListener("click", () => {
+        const active = slider.classList.contains("active");
+        if (active) {
+          slider.classList.remove("active");
+          settingsPage.style.display = "none";
+        } else {
+          openCogTab();
+
+          slider.classList.add("active");
+          settingsPage.style.display = "";
+          settingsPage.style.left = borderElem.offsetLeft + "px";
+          settingsPage.style.height = borderElem.offsetHeight + "px";
+        }
+      })
+      
+      f.verifyBoardIntegrity = (board) => {
+        for (let y = 0; y < board.length; y++) {
+          for (let x = 0; x < board[y].length; x++) {
+            if (board[y][x].blocked) continue;
+            const tempPos = board[y][x].position();
+            if (tempPos.x !== x || tempPos.y !== y) {
+              debugger;
+            }
+          }
+        }
+      }
+      
+      f.printBoard = (board, cord1={},cord2={}) => {
+        for (let i = 0; i < board.length; i++) {
+          const row = createElem("tr");
+          
+          for (let j = 0; j < board[i].length; j++) {
+            window.boardRenderer.set(i, j, board[i][j]);
+          }
+        }
+
+        console.log("Board updated");
+      }
+      
+      function yield() {
+        return new Promise(r=>setTimeout(r,1));
+      }
+      
+      f.printMove = (stepNumber, board, cog1, cog2, pos1, pos2, showStats = false) => {
+        const toAdd = createElem("p");
+
+        let text = `Switch ${pos1.location} \
+        [${pos1.x + 1}|${pos1.y + 1}]`;
+        if (showStats) {
+          text += ` (${cog1.buildRate || 0}:${cog1.expBonus || 0}:${cog1.flaggy || 0})`;
+        }
+        text += ` <span style="background-image: url('${cog1.icon.path}')"></span> with ${pos2.location} [${pos2.x + 1}|${pos2.y + 1}]`;
+        if (showStats) {
+          text += ` (${cog2.buildRate || 0}:${cog2.expBonus || 0}:${cog2.flaggy || 0})`;
+        }
+        text += ` <span style="background-image: url('${cog2.icon.path}')"></span>`;
+
+        toAdd.innerHTML = text;
+
+        toAdd.onclick = () => {
+          stepsPage.goto(stepNumber);
+        }
+        document.getElementById("steps").appendChild(toAdd);
+      }
+      
+      f.getOptimalSteps = (board, cogs) => {
+        const steps = [];
+        
+        const cogsToMove = Object.values(cogs)
+          .map(c=>{return new Cog(c)})
+          .filter((c) => c.key !== c.initialKey);
+
+        const interimCogs = {};
+        for (const cog of cogsToMove) {
+          interimCogs[cog.initialKey] = cog;
+        }
+
+        // Multi-step movements
+        let tuple;
+        while (tuple = Object.entries(interimCogs)[0]) {
+          const [key, cog] = tuple;
+          const targetCog = interimCogs[cog.key] || { icon: "Blank", key, position: cog.position.bind(cog) };
+          if (targetCog === cog) {
+            delete interimCogs[key];
+            continue;
+          }
+          interimCogs[key] = targetCog;
+          steps.push({
+            board,
+            cog,
+            targetCog,
+            keyFrom: Number.parseInt(key),
+            keyTo: Number.parseInt(cog.key)
+          });
+          delete interimCogs[cog.key];
+        }
+
+        return steps;
+      }
+
+      f.printOptimalSteps = (steps) => {
+        document.getElementById("steps").innerHTML = "";
+        const showStats = document.getElementById("showStats").checked;
+
+        for (let i = 0; i < steps.length; i++) {
+          const step = steps[i];
+          f.printMove(
+            i,
+            step.board,
+            step.cog,
+            step.targetCog,
+            step.cog.position(step.keyFrom),
+            step.targetCog.position(step.keyTo),
+            showStats);
+        }
+      }
+
+      function mmoifyNumber(num, addSign = true) {
+        let str = num;
+
+        if (Math.abs(num) >= 1000000) {
+          str = (Math.ceil(num / 10000) / 100) + "M";
+        } else if (Math.abs(num) >= 1000) {
+          str = (Math.ceil(num / 10) / 100) + "K";
+        }
+
+        if (addSign && num >= 0) {
+          str = "+" + str;
+        }
+
+        return str.toString();
+      }
+
+      function load(save) {
+        cogInvetory.load(save);
+        console.log("Loading");
+        // Fetch Gem-Shop flaggy upgrades
+        document.getElementById("flaggyShop").value = cogInvetory.flaggyShopUpgrades;
+        sparePage.goto(0);
+        for (let i = 108; i < 200; i++) {
+          if (!cogInvetory.cogs[i]) continue;
+          const index = (i - 108);
+          const row = Math.floor(index / 3); // 3 since the spare board has 3 columns per row
+          const col = index % 3;
+          window.spareRenderer.set(row, col, cogInvetory.cogs[i]);
+        };
+
+        const initScore = cogInvetory.score;
+        f.printBoard(cogInvetory.board);
+
+        document.getElementById("solve").disabled = "";
+        document.getElementById("steps").innerHTML = "";
+        document.getElementById("buildrate").innerText = mmoifyNumber(initScore.buildRate, false) + "/HR";
+        document.getElementById("xpbonus").innerText = mmoifyNumber(initScore.expBonus, false) + "%";
+        document.getElementById("flaggyrate").innerText = mmoifyNumber(initScore.flaggy, false) + "/HR";
+        
+        for (let oneOption of [...OPTIMIZABLE, "solveTime"]) {
+          const val = localStorage.getItem(oneOption);
+          if (val) {
+            document.getElementById(oneOption).value = val;
+          }
+        }
+        
+
+        openCogTab();
+      }
+      
+      function fetchAndLoadConfig(username) {
+        console.log("Trying to fetch", username);
+        if (username.length > 0) {
+          const headers = {
+            "Content-Type": "text/json",
+            method: "GET"
+          };
+          fetch(`https://cdn.idleonefficiency.com/profiles/${username.toLowerCase()}.json`, headers)
+          .then((response) => {
+            return response.json();
+          }).then((json) => {
+            load(json);
+          }).catch((reason) => {
+            console.log(reason);
+          });
+        }
+      }
+
+      document.getElementById("load").addEventListener("click", () => {
+        const input = document.getElementById("input").value;
+        try {
+          const save = JSON.parse(input);
+          load(save);
+        } catch (e) {
+          if (e instanceof SyntaxError) {
+            fetchAndLoadConfig(input);
+          }
+        }
+      });
+      
+      let optimalSteps = undefined;
+
+      function stepsChangeHandler(ev) {
+        const clone = cogInvetory.clone();
+        for (let i = 0; i < ev.page; i++) {
+          const step = optimalSteps[i];
+          clone.move(step.keyFrom, step.keyTo );
+        }
+
+        const currentStep = optimalSteps[ev.page];
+        const pos1 = currentStep.cog.position(currentStep.keyFrom);
+        const pos2 = currentStep.targetCog.position(currentStep.keyTo);
+
+        // TODO Paddy: clone is now in the state _before_ the move, that should be displayed with the 2 positions highlighted.
+        f.printBoard(clone.board);
+        window.boardRenderer.move(pos1, pos2);
+
+        if (pos1.location == "spare" || pos2.location == "spare") {
+          let pos = pos1;
+          if (pos2.location == "spare") {
+            pos = pos2;
+          }
+          const page = window.spareRenderer.getPage(pos);
+          if (page != -1) {
+            sparePage.goto(page);
+          }
+        }
+
+        window.spareRenderer.move(pos1, pos2);
+        
+        // Animation
+        const renderer = {
+          [window.boardRenderer._type]: window.boardRenderer,
+          [window.spareRenderer._type]: window.spareRenderer
+        };
+
+        const pos1Slot = renderer[pos1.location].get(pos1.y, pos1.x);
+        const pos2Slot = renderer[pos2.location].get(pos2.y, pos2.x);
+
+        if (pos1Slot.item && pos1Slot.item.icon !== "Blank" && pos1Slot.elem.childNodes.length === 1) {
+          const from = pos1Slot.elem.childNodes[0];
+          animateSwitchFrom(from, pos2Slot.elem.getBoundingClientRect());
+        }
+        if (pos2Slot.item && pos2Slot.item.icon !== "Blank" && pos2Slot.elem.childNodes.length === 1) {
+          const to = pos2Slot.elem.childNodes[0];
+          animateSwitchTo(to, pos1Slot.elem.getBoundingClientRect());
+        }
+      }
+
+      document.getElementById("solve").onclick = async () => {
+        const solveTime = getInput("solveTime") || 2500;
+        localStorage.setItem("solveTime", solveTime);
+        document.getElementById("solvetext").innerText = "Optimizing...";
+        document.getElementById("steps").innerHTML = "";
+        let lastYield = Date.now();
+        await yield(); // Yield for DOM-Refresh
+
+        console.log("Starting");
+
+        let start = cogInvetory.clone();
+
+        document.getElementById("start").innerText = `Starting BuildRate: ${start.score.buildRate}, EXP: ${start.score.expBonus}, Flaggy: ${start.score.flaggy}`;
+        const [buildRate, expBonus, flaggy] = [getInput("buildRate"), getInput("expBonus"), getInput("flaggy")];
+        localStorage.setItem("buildRate", buildRate);
+        localStorage.setItem("expBonus", expBonus);
+        localStorage.setItem("flaggy", flaggy);
+        solver.setWeights(getInput("buildRate"), getInput("expBonus"), getInput("flaggy"));
+        const best = await solver.solve(cogInvetory, solveTime);
+        document.getElementById("end").innerText = `Final BuildRate: ${best.score.buildRate}, EXP: ${best.score.expBonus}, Flaggy: ${best.score.flaggy}`;
+        
+        document.getElementById("buildrate").innerText = `${mmoifyNumber(best.score.buildRate - start.score.buildRate)}/HR`;
+        document.getElementById("xpbonus").innerText = `${mmoifyNumber(best.score.expBonus - start.score.expBonus)}%`;
+        document.getElementById("flaggyrate").innerText = `${mmoifyNumber(best.score.flaggy - start.score.flaggy)}/HR`;
+        
+        optimalSteps = f.getOptimalSteps(best.board, best.cogs);
+        f.printOptimalSteps(optimalSteps);
+        if (document.getElementById("showSolved").checked) {
+          // Show solved board 
+          f.printBoard(best.board);
+          stepsPage.reset(optimalSteps.length, optimalSteps.length - 1);
+        } else {
+          f.printBoard(start.board);
+          stepsPage.reset(optimalSteps.length, 0);
+        }
+
+        document.getElementById("solvetext").innerText = "Solve";
+        openCogTab();
+      };
+    
+      function openCogTab() {
+        document.getElementById("loader").style.display = "none";
+        document.getElementById("result").style.display = "inherit";
+
+        document.getElementById("loaderbtn").className = "";
+        document.getElementById("cogbtn").className = "active";
+      }
+
+      function openLoaderTab() {
+        document.getElementById("loader").style.display = "inherit";
+        document.getElementById("result").style.display = "none";
+
+        document.getElementById("loaderbtn").className = "active";
+        document.getElementById("cogbtn").className = "";
+      }
+
+      document.getElementById("loaderbtn").addEventListener("click", () => {
+        openLoaderTab();
+      });
+      document.getElementById("cogbtn").addEventListener("click", () => {
+        openCogTab();
+      });
+    </script>
+  </body>
+</html>
