@@ -1,130 +1,183 @@
-function yield() {
-  return new Promise(r=>setTimeout(r,1));
-}
+/**
+ * ========================================
+ * SOLVER - ADAPTATEUR POUR SOLVEUR v2.0
+ * ========================================
+ *
+ * Ce fichier fait le pont entre l'ancien système et le nouveau Solveur.js
+ * Il permet à l'interface existante de fonctionner avec le nouvel algorithme génétique
+ *
+ * AUTEUR : Latury
+ * DATE : 26 octobre 2025
+ */
 
 class Solver {
-  constructor(weights={}) {
-    this.setWeights(weights.buildRate, weights.expBonus, weights.flaggy)
-  }
-  
-  setWeights(buildRate, expBonus, flaggy) {
+  constructor() {
     this.weights = {
-      buildRate: buildRate,
-      expBonus: expBonus,
-      flaggy: flaggy
-    }
+      buildRate: 1.0,
+      expBonus: 1.0,
+      flaggyRate: 1.0,
+    };
+
+    console.log("🔧 Solver adaptateur initialisé");
   }
-  
-  getScoreSum(score) {
-    let res = 0;
-    res += score.buildRate * this.weights.buildRate;
-    res += score.expBonus * this.weights.expBonus * (score.expBoost + 10) / 10; // For now we just assume 10 players...
-    res += score.flaggy * this.weights.flaggy * (score.flagBoost + 4) / 4;
-    return res;
-  }
-  
-  static _yield() {
-    return new Promise(r=>setTimeout(r,1));
-  }
-  
+
   /**
-   * solveTime: Number - Time in ms how long the solver should run
+   * Définit les poids pour l'optimisation
+   * @param {number} buildRate - Poids de la vitesse de construction
+   * @param {number} expBonus - Poids du bonus d'expérience
+   * @param {number} flaggy - Poids du taux de drapeaux
    */
-  async solve(inventory, solveTime=1000) {
-    if (inventory.flagPose.length === 0) {
-      // No flaggs placed means no use for flaggy rate
-      this.weights.flaggy = 0;
-    }
-    console.log("Solving with goal:", this.weights);
-    let lastYield = Date.now();
-    let state = inventory.clone();
-    const solutions = [state];
-    const startTime = Date.now();
-    const allSlots = inventory.availableSlotKeys;
-    let counter = 0;
-    let currentScore = this.getScoreSum(state.score);
+  setWeights(buildRate, expBonus, flaggy) {
+    // Met à jour les poids globaux du nouveau système
+    POIDS_OBJECTIFS.buildRate = buildRate;
+    POIDS_OBJECTIFS.expBonus = expBonus;
+    POIDS_OBJECTIFS.flaggyRate = flaggy;
 
-    console.log("Trying to optimize");
-    while(Date.now() - startTime < solveTime) {
-      if(Date.now() - lastYield > 100) {
-        // Prevent UI from freezing with very high solve times
-        await Solver._yield();
-        lastYield = Date.now();
-      }
-      counter++;
-      if (counter % 10000 === 0) {
-        state = inventory.clone();
-        this.shuffle(state);
-        currentScore = this.getScoreSum(state.score);
-        solutions.push(state);
-      }
-      const slotKey = allSlots[Math.floor(Math.random() * allSlots.length)];
-      // Moving a cog to an empty space changes the list of cog keys, so we need to re-fetch this
-      const allKeys = state.cogKeys;
-      const cogKey = allKeys[Math.floor(Math.random() * allKeys.length)];
-      const slot = state.get(slotKey);
-      const cog = state.get(cogKey);
+    this.weights.buildRate = buildRate;
+    this.weights.expBonus = expBonus;
+    this.weights.flaggyRate = flaggy;
 
-      if (slot.fixed || cog.fixed || cog.position().location === "build") continue;
-      state.move(slotKey, cogKey);
-      const scoreSumUpdate = this.getScoreSum(state.score);
-      if (scoreSumUpdate > currentScore) {
-        currentScore = scoreSumUpdate;
-      } else {
-        state.move(slotKey, cogKey);
-      }
-    }
-    console.log(`Tried ${counter} switches`);
-    const scores = solutions.map((s)=>this.getScoreSum(s.score));
-    console.log(`Made ${solutions.length} different attempts with final scores: ${scores}`);
-    const bestIndex = scores.indexOf(scores.reduce((a,b)=>Math.max(a,b)));
-    let best = solutions[bestIndex];
-    if (g.best === null || this.getScoreSum(g.best.score) < scores[bestIndex]) {
-      console.log("Best solution was number", bestIndex);
-      g.best = best;
-    } else {
-      best = g.best;
-    }
-    this.removeUselesMoves(best);
-    return best;
+    console.log("⚖️ Poids définis :", this.weights);
   }
-  
-  shuffle(inventory, n = 500) {
-    const allSlots = inventory.availableSlotKeys;
-    for (let i = 0; i < n; i++) {
-      const slotKey = allSlots[Math.floor(Math.random() * allSlots.length)];
-      // Moving a cog to an empty space changes the list of cog keys, so we need to re-fetch this
-      const allKeys = inventory.cogKeys;
-      const cogKey = allKeys[Math.floor(Math.random() * allKeys.length)];
-      const slot = inventory.get(slotKey);
-      const cog = inventory.get(cogKey);
 
-      if (slot.fixed || cog.fixed || cog.position().location === "build") continue;
-      inventory.move(slotKey, cogKey);
+  /**
+   * Lance l'optimisation
+   * @param {CogInventory} cogInventory - L'inventaire des engrenages
+   * @param {number} solveTime - Temps d'optimisation en millisecondes
+   * @returns {Promise<CogInventory>} La meilleure solution trouvée
+   */
+  async solve(cogInventory, solveTime = 2500) {
+    console.log("🚀 Début de l'optimisation");
+    console.log(`⏱️ Temps alloué : ${solveTime}ms`);
+
+    try {
+      // Convertit l'inventaire en liste d'engrenages pour le nouveau système
+      const engrenagesDisponibles = this.convertirInventaire(cogInventory);
+
+      console.log(`📦 ${engrenagesDisponibles.length} engrenages à optimiser`);
+
+      // Ajuste le nombre de générations en fonction du temps disponible
+      const generationsOriginales = CONFIG_ALGO_GENETIQUE.nombreGenerations;
+      CONFIG_ALGO_GENETIQUE.nombreGenerations = Math.floor(solveTime / 10);
+
+      // Appelle le nouveau système d'optimisation
+      const solutions = optimiserPlacementCogs(
+        engrenagesDisponibles,
+        (pourcentage, meilleureSolution) => {
+          // Callback de progression (optionnel)
+          if (pourcentage % 20 === 0) {
+            console.log(
+              `📊 ${pourcentage}% - Score: ${meilleureSolution.fitness.toFixed(
+                2
+              )}`
+            );
+          }
+        }
+      );
+
+      // Restaure le nombre de générations original
+      CONFIG_ALGO_GENETIQUE.nombreGenerations = generationsOriginales;
+
+      if (!solutions || solutions.length === 0) {
+        throw new Error("Aucune solution trouvée");
+      }
+
+      // Prend la meilleure solution
+      const meilleureSolution = solutions[0];
+
+      console.log("✅ Optimisation terminée !");
+      console.log(
+        `🏆 Meilleur score : ${meilleureSolution.fitness.toFixed(2)}`
+      );
+
+      // Convertit la solution en format compatible avec l'ancien système
+      return this.convertirSolution(meilleureSolution, cogInventory);
+    } catch (erreur) {
+      console.error("❌ Erreur pendant l'optimisation :", erreur);
+      throw erreur;
     }
   }
-  
-  removeUselesMoves(inventory) {
-    const goal = inventory.score;
-    const cogsToMove = Object.values(inventory.cogs)
-      .filter((c) => c.key !== c.initialKey);
-    // Check if move still changes something
-    for (let i = 0; i < cogsToMove.length; i++) {
-      const cog1 = cogsToMove[i];
-      const cog1Key = cog1.key;
-      const cog2Key = cog1.initialKey;
-      inventory.move(cog1Key, cog2Key);
-      const changed = inventory.score;
-      if (changed.buildRate === goal.buildRate
-        && changed.flaggy === goal.flaggy
-        && changed.expBonus === goal.expBonus
-        && changed.expBoost === goal.expBoost
-        && changed.flagBoost === goal.flagBoost) {
-        console.log(`Removed useless move ${cog1Key} to ${cog2Key}`);
 
+  /**
+   * Convertit l'inventaire du format ancien vers le nouveau
+   * @param {CogInventory} cogInventory - Inventaire à convertir
+   * @returns {Array<Engrenage>} Liste d'engrenages pour le nouveau système
+   */
+  convertirInventaire(cogInventory) {
+    const engrenages = [];
+
+    // Parcourt tous les engrenages de l'inventaire
+    for (let key in cogInventory.cogs) {
+      const cog = cogInventory.cogs[key];
+
+      if (!cog || cog.icon === "Blank") {
         continue;
       }
-      inventory.move(cog1Key, cog2Key);
+
+      // Crée un nouvel engrenage avec le nouveau système
+      const engrenage = new Engrenage(
+        cog.icon,
+        cog.buildRate || 0,
+        cog.expBonus || 0,
+        cog.flaggy || 0,
+        1 // Niveau par défaut
+      );
+
+      engrenages.push(engrenage);
     }
+
+    return engrenages;
   }
+
+  /**
+   * Convertit une solution du nouveau format vers l'ancien
+   * @param {Solution} solution - Solution du nouveau système
+   * @param {CogInventory} cogInventoryOriginal - Inventaire original
+   * @returns {CogInventory} Inventaire avec la solution appliquée
+   */
+  convertirSolution(solution, cogInventoryOriginal) {
+    // Clone l'inventaire original
+    const resultat = cogInventoryOriginal.clone();
+
+    // Vide la grille actuelle
+    for (let y = 0; y < CONFIG_GRILLE.hauteur; y++) {
+      for (let x = 0; x < CONFIG_GRILLE.largeur; x++) {
+        const key = y * CONFIG_GRILLE.largeur + x;
+        if (resultat.cogs[key]) {
+          resultat.cogs[key].icon = "Blank";
+          resultat.cogs[key].buildRate = 0;
+          resultat.cogs[key].expBonus = 0;
+          resultat.cogs[key].flaggy = 0;
+        }
+      }
+    }
+
+    // Place les engrenages de la solution optimale
+    for (let y = 0; y < CONFIG_GRILLE.hauteur; y++) {
+      for (let x = 0; x < CONFIG_GRILLE.largeur; x++) {
+        const caseGrille = solution.grille.obtenirCase(x, y);
+
+        if (caseGrille && caseGrille.engrenage) {
+          const key = y * CONFIG_GRILLE.largeur + x;
+
+          if (resultat.cogs[key]) {
+            resultat.cogs[key].icon = caseGrille.engrenage.nom;
+            resultat.cogs[key].buildRate = caseGrille.engrenage.buildRate;
+            resultat.cogs[key].expBonus = caseGrille.engrenage.expBonus;
+            resultat.cogs[key].flaggy = caseGrille.engrenage.flaggyRate;
+          }
+        }
+      }
+    }
+
+    // Le score sera automatiquement recalculé par CogInventory
+    // On ne peut pas le définir directement car c'est un getter
+
+    return resultat;
+  }
+}
+
+// Export pour utilisation dans le navigateur
+if (typeof window !== "undefined") {
+  window.Solver = Solver;
 }
