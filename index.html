@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -8,69 +8,70 @@
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
 
     <link rel="stylesheet" href="style.css" />
-    <script type="text/javascript" src="Solver.js"></script>
+    <script type="text/javascript" src="Solveur.js"></script>
     <script type="text/javascript" src="CogInventory.js"></script>
     <script type="text/javascript" src="BoardRenderer.js"></script>
     <script type="text/javascript" src="PlayerRenderer.js"></script>
     <script type="text/javascript" src="Paginator.js"></script>
-    
-    <title>Cogtimizer</title>
+
+    <title>Jarvis Cog Optimisateur</title>
   </head>
   <body>
     <div class="menucontainer">
       <ul class="menu">
-        <li id="loaderbtn" class="active"><div><div><div>Loader</div></div></div></li>
-        <li id="cogbtn"><div><div><div>Cogs</div></div></div></li>
+        <li id="loaderbtn" class="active"><div><div><div>Chargeur</div></div></div></li>
+        <li id="cogbtn"><div><div><div>Engrenages</div></div></div></li>
       </ul>
       <div class="options">
         <button id="settingsbtn">
           <div></div>
           <div>
-            Settings
+            Paramètres
             <div class="checkbox"></div>
           </div>
           <div></div>
         </button>
         <button id="solve" >
           <div></div>
-          <div id="solvetext">Solve</div>
+          <div id="solvetext">Optimiser</div>
           <div></div>
         </button>
       </div>
       <div class="spacer"></div>
       <div class="crow"></div>
     </div>
+
     <div class="content">
       <div id="loader">
       <div class="inputarea">
-        <div>Enter config json or username</div>
+        <div>Entrez le JSON de configuration ou votre nom d'utilisateur</div>
         <textarea type="textarea" id="input" rows="10" cols="100"></textarea>
         <div>
-          <button id="load" style="max-width: 15ch;">Load</button>
+          <button id="load" style="max-width: 15ch;">Charger</button>
         </div>
       </div>
     </div>
       <div id="result">
         <div id="notify">
-          <span>Please</span>
-          <span>load</span>
-          <span>a</span>
-          <span>savegame</span>
+          <span>Veuillez</span>
+          <span>charger</span>
+          <span>une</span>
+          <span>sauvegarde</span>
         </div>
         <div class="info">
           <div id="spare">---Placeholder---</div>
           <div id="sparepage"></div>
           <div class="stats">
             <span class="buildrate">
-              <h3>Total Build Rate</h3>
+              <h3>Vitesse de construction totale</h3>
               <p id="buildrate">N/A</p>
             </span>
             <span class="xpbonus">
-              <h3>Player XP Bonus</h3>
+              <h3>Bonus XP Joueur</h3>
               <p id="xpbonus">N/A</p>
             </span>
             <span class="flaggyrate">
-              <h3>Flaggy Rate</h3>
+              <h3>Taux de Flaggy</h3>
               <p id="flaggyrate">N/A</p>
             </span>
           </div>
@@ -78,33 +79,33 @@
         <div class="border" id="border"></div>
         <div id="settings" style="display: none;">
           <p>
-            <label for="flaggyShop">Gem Shop Flaggy upgrades</label><br />
+            <label for="flaggyShop">Améliorations Flaggy (Boutique gemmes)</label><br />
             <input type="number" id="flaggyShop" value="0" style="width:6ch" disabled=true></input>
           </p>
           <p>
-            <label for="buildRate">Build rate score weight</label><br />
+            <label for="buildRate">Poids vitesse de construction</label><br />
             <input type="number" id="buildRate" value="2" style="width:6ch"></input>
           </p>
           <p>
-            <label for="expBonus">EXP Bonus score weight</label><br />
+            <label for="expBonus">Poids bonus EXP</label><br />
             <input type="number" id="expBonus" value="50" style="width:6ch"></input>
           </p>
           <p>
-            <label for="flaggy">Flaggy rate score weight</label><br />
+            <label for="flaggy">Poids taux Flaggy</label><br />
             <input type="number" id="flaggy" value="5" style="width:6ch"></input>
           </p>
           <p>
-            <label for="solveTime">Solve times (ms)</label><br />
+            <label for="solveTime">Temps d'optimisation (ms)</label><br />
             <input type="number" id="solveTime" value="2500" style="width:10ch"></input>
           </p>
-          <h4>Misc.</h4>
+          <h4>Divers</h4>
           <hr />
           <p>
-            <label for="showStats">Show cog stats?</label>
+            <label for="showStats">Afficher les stats des engrenages ?</label>
             <input type="checkbox" id="showStats" />
           </p>
           <p>
-            <label for="showSolved">Directly show solved board</label>
+            <label for="showSolved">Afficher directement la grille optimisée</label>
             <input type="checkbox" id="showSolved" />
           </p>
         </div>
@@ -113,6 +114,7 @@
         <div id="steps"></div>
       </div>
     </div>
+
     <p id="start"></p>
     <p id="end"></p>
     <script type="text/javascript">
@@ -138,7 +140,7 @@
           fromDiv.style.height = bounds.height + "px";
           fromDiv.style.top = bounds.top + "px";
           fromDiv.style.left = bounds.left + "px";
-          
+
           clearTimeout(timerID);
           timerID = setTimeout(() => {
             fromDiv.className = "switch";
@@ -161,7 +163,7 @@
       const ROWS = 8;
       const COLUMNS = 12;
       const OPTIMIZABLE = ["buildRate", "expBonus", "flaggy"];
-      
+
       const getInput = (id) => Number.parseInt(document.getElementById(id).value);
       const getFlaggyShop = getInput.bind(null, "flaggyShop");
 
@@ -172,7 +174,7 @@
         }
         return elem;
       }
-      
+
       window.g = {
         cogs: {},
         board: [],
@@ -192,13 +194,12 @@
 
       const boardElem = document.getElementById("currentBoard");
       boardElem.innerHTML = "";
-      // boardElem.appendChild(table);
       boardElem.appendChild(window.boardRenderer.createHTMLElement());
 
       const stepContainer = createElem("div");
       stepContainer.id = "stepspage";
       boardElem.appendChild(stepContainer);
-      const stepsPage = new Paginator("stepspage", 0, 0, "Step");
+      const stepsPage = new Paginator("stepspage", 0, 0, "Étape");
       stepsPage.addEventListener("change", stepsChangeHandler);
 
       window.addEventListener("keyup", (ev) => {
@@ -232,7 +233,7 @@
           settingsPage.style.height = borderElem.offsetHeight + "px";
         }
       })
-      
+
       f.verifyBoardIntegrity = (board) => {
         for (let y = 0; y < board.length; y++) {
           for (let x = 0; x < board[y].length; x++) {
@@ -244,32 +245,32 @@
           }
         }
       }
-      
+
       f.printBoard = (board, cord1={},cord2={}) => {
         for (let i = 0; i < board.length; i++) {
           const row = createElem("tr");
-          
+
           for (let j = 0; j < board[i].length; j++) {
             window.boardRenderer.set(i, j, board[i][j]);
           }
         }
 
-        console.log("Board updated");
+        console.log("Grille mise à jour");
       }
-      
+
       function yield() {
         return new Promise(r=>setTimeout(r,1));
       }
-      
+
       f.printMove = (stepNumber, board, cog1, cog2, pos1, pos2, showStats = false) => {
         const toAdd = createElem("p");
 
-        let text = `Switch ${pos1.location} \
+        let text = `Échanger ${pos1.location} \
         [${pos1.x + 1}|${pos1.y + 1}]`;
         if (showStats) {
           text += ` (${cog1.buildRate || 0}:${cog1.expBonus || 0}:${cog1.flaggy || 0})`;
         }
-        text += ` <span style="background-image: url('${cog1.icon.path}')"></span> with ${pos2.location} [${pos2.x + 1}|${pos2.y + 1}]`;
+        text += ` <span style="background-image: url('${cog1.icon.path}')"></span> avec ${pos2.location} [${pos2.x + 1}|${pos2.y + 1}]`;
         if (showStats) {
           text += ` (${cog2.buildRate || 0}:${cog2.expBonus || 0}:${cog2.flaggy || 0})`;
         }
@@ -282,10 +283,10 @@
         }
         document.getElementById("steps").appendChild(toAdd);
       }
-      
+
       f.getOptimalSteps = (board, cogs) => {
         const steps = [];
-        
+
         const cogsToMove = Object.values(cogs)
           .map(c=>{return new Cog(c)})
           .filter((c) => c.key !== c.initialKey);
@@ -353,14 +354,14 @@
 
       function load(save) {
         cogInvetory.load(save);
-        console.log("Loading");
+        console.log("Chargement en cours");
         // Fetch Gem-Shop flaggy upgrades
         document.getElementById("flaggyShop").value = cogInvetory.flaggyShopUpgrades;
         sparePage.goto(0);
         for (let i = 108; i < 200; i++) {
           if (!cogInvetory.cogs[i]) continue;
           const index = (i - 108);
-          const row = Math.floor(index / 3); // 3 since the spare board has 3 columns per row
+          const row = Math.floor(index / 3);
           const col = index % 3;
           window.spareRenderer.set(row, col, cogInvetory.cogs[i]);
         };
@@ -373,20 +374,19 @@
         document.getElementById("buildrate").innerText = mmoifyNumber(initScore.buildRate, false) + "/HR";
         document.getElementById("xpbonus").innerText = mmoifyNumber(initScore.expBonus, false) + "%";
         document.getElementById("flaggyrate").innerText = mmoifyNumber(initScore.flaggy, false) + "/HR";
-        
+
         for (let oneOption of [...OPTIMIZABLE, "solveTime"]) {
           const val = localStorage.getItem(oneOption);
           if (val) {
             document.getElementById(oneOption).value = val;
           }
         }
-        
 
         openCogTab();
       }
-      
+
       function fetchAndLoadConfig(username) {
-        console.log("Trying to fetch", username);
+        console.log("Tentative de récupération", username);
         if (username.length > 0) {
           const headers = {
             "Content-Type": "text/json",
@@ -414,7 +414,7 @@
           }
         }
       });
-      
+
       let optimalSteps = undefined;
 
       function stepsChangeHandler(ev) {
@@ -428,7 +428,6 @@
         const pos1 = currentStep.cog.position(currentStep.keyFrom);
         const pos2 = currentStep.targetCog.position(currentStep.keyTo);
 
-        // TODO Paddy: clone is now in the state _before_ the move, that should be displayed with the 2 positions highlighted.
         f.printBoard(clone.board);
         window.boardRenderer.move(pos1, pos2);
 
@@ -444,7 +443,7 @@
         }
 
         window.spareRenderer.move(pos1, pos2);
-        
+
         // Animation
         const renderer = {
           [window.boardRenderer._type]: window.boardRenderer,
@@ -467,32 +466,31 @@
       document.getElementById("solve").onclick = async () => {
         const solveTime = getInput("solveTime") || 2500;
         localStorage.setItem("solveTime", solveTime);
-        document.getElementById("solvetext").innerText = "Optimizing...";
+        document.getElementById("solvetext").innerText = "Optimisation...";
         document.getElementById("steps").innerHTML = "";
         let lastYield = Date.now();
-        await yield(); // Yield for DOM-Refresh
+        await yield();
 
-        console.log("Starting");
+        console.log("Démarrage");
 
         let start = cogInvetory.clone();
 
-        document.getElementById("start").innerText = `Starting BuildRate: ${start.score.buildRate}, EXP: ${start.score.expBonus}, Flaggy: ${start.score.flaggy}`;
+        document.getElementById("start").innerText = `Vitesse construction initiale : ${start.score.buildRate}, EXP : ${start.score.expBonus}, Flaggy : ${start.score.flaggy}`;
         const [buildRate, expBonus, flaggy] = [getInput("buildRate"), getInput("expBonus"), getInput("flaggy")];
         localStorage.setItem("buildRate", buildRate);
         localStorage.setItem("expBonus", expBonus);
         localStorage.setItem("flaggy", flaggy);
         solver.setWeights(getInput("buildRate"), getInput("expBonus"), getInput("flaggy"));
         const best = await solver.solve(cogInvetory, solveTime);
-        document.getElementById("end").innerText = `Final BuildRate: ${best.score.buildRate}, EXP: ${best.score.expBonus}, Flaggy: ${best.score.flaggy}`;
-        
+        document.getElementById("end").innerText = `Vitesse construction finale : ${best.score.buildRate}, EXP : ${best.score.expBonus}, Flaggy : ${best.score.flaggy}`;
+
         document.getElementById("buildrate").innerText = `${mmoifyNumber(best.score.buildRate - start.score.buildRate)}/HR`;
         document.getElementById("xpbonus").innerText = `${mmoifyNumber(best.score.expBonus - start.score.expBonus)}%`;
         document.getElementById("flaggyrate").innerText = `${mmoifyNumber(best.score.flaggy - start.score.flaggy)}/HR`;
-        
+
         optimalSteps = f.getOptimalSteps(best.board, best.cogs);
         f.printOptimalSteps(optimalSteps);
         if (document.getElementById("showSolved").checked) {
-          // Show solved board 
           f.printBoard(best.board);
           stepsPage.reset(optimalSteps.length, optimalSteps.length - 1);
         } else {
@@ -500,10 +498,10 @@
           stepsPage.reset(optimalSteps.length, 0);
         }
 
-        document.getElementById("solvetext").innerText = "Solve";
+        document.getElementById("solvetext").innerText = "Optimiser";
         openCogTab();
       };
-    
+
       function openCogTab() {
         document.getElementById("loader").style.display = "none";
         document.getElementById("result").style.display = "inherit";
