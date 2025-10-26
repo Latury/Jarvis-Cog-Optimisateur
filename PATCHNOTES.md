@@ -166,3 +166,74 @@ Le projet suit le format de versioning sémantique :
 - 🎨 Design/Interface
 - ⚡ Performance
 - 🔒 Sécurité
+
+---
+
+## Version 0.2.0 - 26 octobre 2025 (2h30 du matin)
+
+### 🎉 Nouveau Solveur v2.0 - Algorithme Génétique
+
+**Accomplissements majeurs :**
+- ✅ Création complète du nouveau fichier `Solveur.js` en français
+- ✅ Implémentation de l'algorithme génétique avec 647 lignes de code commentées
+- ✅ Tests réussis : l'algorithme fonctionne parfaitement !
+- ✅ Création d'une page de test interactive (`test.html`)
+
+**Fichiers créés :**
+- `Solveur.js` - Nouvel algorithme d'optimisation v2.0
+- `test.html` - Page de test avec logs en temps réel
+
+**Caractéristiques du nouveau Solveur :**
+- 🧬 Algorithme génétique complet
+- 🇫🇷 100% en français avec commentaires détaillés
+- ⚡ Population de 100 solutions sur 200 générations
+- 🎯 Sélection par tournoi
+- 🔀 Croisement et mutation intelligents
+- 🏆 Élitisme : garde les 10 meilleures solutions
+- 📊 Fonction de callback pour afficher la progression
+
+**Classes implémentées :**
+- `Engrenage` - Représente un Cog avec ses statistiques
+- `CaseGrille` - Représente une case de la grille
+- `Grille` - Gère la grille complète 12×8
+- `Solution` - Représente une solution avec son score
+
+**Fonctions principales :**
+- `optimiserPlacementCogs()` - Fonction principale d'optimisation
+- `creerPopulationInitiale()` - Génère les solutions initiales
+- `evoluerGeneration()` - Fait évoluer la population
+- `selectionParTournoi()` - Sélectionne les meilleurs parents
+- `croiserSolutions()` - Crée des enfants à partir de parents
+- `muterSolution()` - Applique des mutations aléatoires
+- `conserverElite()` - Garde les meilleures solutions
+
+**Page de test :**
+- Interface moderne avec thème sombre
+- Logs en temps réel affichés dans la page
+- Bouton pour copier les logs
+- Affichage du Top 3 des meilleures solutions
+- Test avec 50 engrenages (20 Nooby, 15 Decent, 10 Superb, 5 Ultimate)
+
+**Résultats des tests :**
+- ✅ Algorithme testé et fonctionnel
+- ✅ Génération de 100 solutions initiales
+- ✅ Évolution sur 200 générations
+- ✅ Amélioration progressive du score
+- ✅ Retour des 10 meilleures solutions
+
+**Temps de développement :**
+- ~3 heures de travail (23h00 - 2h30)
+- Debugging inclus
+- Documentation complète
+
+**État actuel :**
+- ✅ Algorithme génétique : 100% fonctionnel
+- ⏳ Interface principale : pas encore adaptée
+- ⏳ Intégration avec l'ancien code : à faire
+- ⏳ Traduction de l'interface : à faire
+
+**Prochaines étapes :**
+- [ ] Adapter l'interface principale (index.html) pour utiliser Solveur.js
+- [ ] Mettre à jour BoardRenderer.js pour afficher les résultats
+- [ ] Traduire toute l'interface en français
+- [ ] Comparer les performances avec l'ancien algorithme
