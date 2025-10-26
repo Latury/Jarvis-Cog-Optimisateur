@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Test - Jarvis Cog Optimisateur</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 1000px;
+        margin: 20px auto;
+        padding: 20px;
+        background: #1a1a2e;
+        color: #eee;
+      }
+
+      h1 {
+        color: #ff6b6b;
+        text-align: center;
+      }
+
+      .container {
+        background: #16213e;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        margin-bottom: 20px;
+      }
+
+      button {
+        background: #ff6b6b;
+        color: white;
+        border: none;
+        padding: 15px 30px;
+        font-size: 18px;
+        border-radius: 5px;
+        cursor: pointer;
+        width: 100%;
+        margin-bottom: 20px;
+        transition: background 0.3s;
+      }
+
+      button:hover {
+        background: #ee5a5a;
+      }
+
+      button:disabled {
+        background: #555;
+        cursor: not-allowed;
+      }
+
+      #resultats {
+        background: #0f3460;
+        padding: 20px;
+        border-radius: 5px;
+        margin-top: 20px;
+        min-height: 100px;
+      }
+
+      #logs {
+        background: #0a0a0a;
+        padding: 15px;
+        border-radius: 5px;
+        font-family: "Courier New", monospace;
+        font-size: 13px;
+        max-height: 400px;
+        overflow-y: auto;
+        border: 2px solid #333;
+      }
+
+      .log-line {
+        margin: 5px 0;
+        padding: 5px;
+        border-left: 3px solid #555;
+        padding-left: 10px;
+      }
+
+      .log-error {
+        color: #e74c3c;
+        background: #3d0a0a;
+        border-left-color: #e74c3c;
+      }
+
+      .log-success {
+        color: #2ecc71;
+        border-left-color: #2ecc71;
+      }
+
+      .log-info {
+        color: #3498db;
+        border-left-color: #3498db;
+      }
+
+      .log-warning {
+        color: #f39c12;
+        border-left-color: #f39c12;
+      }
+
+      .score {
+        background: #1a472a;
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 5px;
+        border-left: 4px solid #2ecc71;
+      }
+
+      .loading {
+        text-align: center;
+        font-size: 24px;
+        animation: pulse 1.5s ease-in-out infinite;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
+
+      .success {
+        color: #2ecc71;
+        font-weight: bold;
+      }
+
+      .info {
+        color: #3498db;
+      }
+
+      h3 {
+        margin-top: 0;
+        color: #ff6b6b;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🧪 Test du Solveur Jarvis v2.0</h1>
+
+    <div class="container">
+      <p>
+        Cette page teste le nouveau algorithme génétique d'optimisation des
+        Cogs.
+      </p>
+      <p class="info">
+        Les logs et erreurs s'affichent directement ci-dessous !
+      </p>
+
+      <button id="btnTest" onclick="lancerTest()">
+        🚀 Lancer le test d'optimisation
+      </button>
+
+      <div id="resultats">
+        <p>Clique sur le bouton pour lancer le test...</p>
+      </div>
+    </div>
+
+    <div class="container">
+      <h3>📋 Logs en temps réel</h3>
+      <button
+        onclick="copierLogs()"
+        style="margin-bottom: 15px; background: #3498db"
+      >
+        📋 Copier les logs
+      </button>
+      <div id="logs">
+        <div class="log-info">En attente du test...</div>
+      </div>
+    </div>
+
+    <!-- Charge le fichier Solveur.js -->
+    <script src="Solveur.js"></script>
+
+    <script>
+      // Remplace console.log pour afficher dans la page
+      const originalConsoleLog = console.log;
+      const originalConsoleError = console.error;
+
+      function ajouterLog(message, type = "info") {
+        const logsDiv = document.getElementById("logs");
+        const logLine = document.createElement("div");
+        logLine.className = `log-line log-${type}`;
+        logLine.textContent = message;
+        logsDiv.appendChild(logLine);
+        logsDiv.scrollTop = logsDiv.scrollHeight;
+
+        // Appelle aussi le vrai console.log
+        if (type === "error") {
+          originalConsoleError(message);
+        } else {
+          originalConsoleLog(message);
+        }
+      }
+
+      console.log = function (...args) {
+        ajouterLog(args.join(" "), "info");
+      };
+
+      console.error = function (...args) {
+        ajouterLog("❌ " + args.join(" "), "error");
+      };
+
+      /**
+       * Fonction pour lancer le test de l'algorithme
+       */
+      function lancerTest() {
+        const bouton = document.getElementById("btnTest");
+        const resultatsDiv = document.getElementById("resultats");
+        const logsDiv = document.getElementById("logs");
+
+        // Vide les logs
+        logsDiv.innerHTML = "";
+
+        // Désactive le bouton pendant le test
+        bouton.disabled = true;
+        bouton.textContent = "⏳ Optimisation en cours...";
+
+        // Affiche un message de chargement
+        resultatsDiv.innerHTML =
+          '<div class="loading">🧬 Calcul en cours...</div>';
+
+        ajouterLog("========================================", "info");
+        ajouterLog("🧪 DÉBUT DU TEST", "success");
+        ajouterLog("========================================", "info");
+
+        // Crée des engrenages de test
+        try {
+          const engrenagesTest = creerEngrenagesTest();
+          ajouterLog(
+            `📦 ${engrenagesTest.length} engrenages créés pour le test`,
+            "success"
+          );
+
+          // Lance l'optimisation
+          setTimeout(() => {
+            try {
+              const solutions = optimiserPlacementCogs(
+                engrenagesTest,
+                afficherProgression
+              );
+
+              // Affiche les résultats
+              afficherResultats(solutions);
+
+              ajouterLog("========================================", "info");
+              ajouterLog("✅ TEST TERMINÉ AVEC SUCCÈS", "success");
+              ajouterLog("========================================", "info");
+            } catch (erreur) {
+              ajouterLog(
+                "❌ ERREUR pendant l'optimisation : " + erreur.message,
+                "error"
+              );
+              ajouterLog("Détails : " + erreur.stack, "error");
+              resultatsDiv.innerHTML = `
+                            <p style="color: #e74c3c;">❌ Erreur : ${erreur.message}</p>
+                            <p>Consulte les logs ci-dessous pour plus de détails.</p>
+                        `;
+            }
+
+            // Réactive le bouton
+            bouton.disabled = false;
+            bouton.textContent = "🔄 Relancer un test";
+          }, 100);
+        } catch (erreur) {
+          ajouterLog(
+            "❌ ERREUR lors de la création des engrenages : " + erreur.message,
+            "error"
+          );
+          ajouterLog("Détails : " + erreur.stack, "error");
+          resultatsDiv.innerHTML = `
+                    <p style="color: #e74c3c;">❌ Erreur critique : ${erreur.message}</p>
+                `;
+          bouton.disabled = false;
+          bouton.textContent = "🔄 Relancer un test";
+        }
+      }
+
+      /**
+       * Crée des engrenages de test
+       */
+      function creerEngrenagesTest() {
+        const engrenages = [];
+
+        ajouterLog("Création de 20 engrenages Nooby...", "info");
+        for (let i = 0; i < 20; i++) {
+          engrenages.push(new Engrenage("Nooby", 10, 5, 2, 1));
+        }
+
+        ajouterLog("Création de 15 engrenages Decent...", "info");
+        for (let i = 0; i < 15; i++) {
+          engrenages.push(new Engrenage("Decent", 25, 12, 5, 15));
+        }
+
+        ajouterLog("Création de 10 engrenages Superb...", "info");
+        for (let i = 0; i < 10; i++) {
+          engrenages.push(new Engrenage("Superb", 50, 25, 10, 40));
+        }
+
+        ajouterLog("Création de 5 engrenages Ultimate...", "info");
+        for (let i = 0; i < 5; i++) {
+          engrenages.push(new Engrenage("Ultimate", 100, 50, 20, 70));
+        }
+
+        return engrenages;
+      }
+
+      /**
+       * Affiche la progression dans les logs
+       */
+      function afficherProgression(pourcentage, meilleureSolution) {
+        ajouterLog(
+          `📊 ${pourcentage}% - Score actuel : ${meilleureSolution.fitness.toFixed(
+            2
+          )}`,
+          "warning"
+        );
+      }
+
+      /**
+       * Affiche les résultats dans la page
+       */
+      function afficherResultats(solutions) {
+        const resultatsDiv = document.getElementById("resultats");
+
+        let html = '<h3 class="success">✅ Optimisation terminée !</h3>';
+        html += `<p>Nombre de solutions trouvées : <strong>${solutions.length}</strong></p>`;
+        html += "<h4>🏆 Top 3 des meilleures solutions :</h4>";
+
+        // Affiche les 3 meilleures solutions
+        for (let i = 0; i < Math.min(3, solutions.length); i++) {
+          const solution = solutions[i];
+          const scores = solution.scores;
+
+          html += `
+                    <div class="score">
+                        <strong>Solution #${i + 1}</strong><br>
+                        🎯 Score total : <strong>${scores.scoreTotal.toFixed(
+                          2
+                        )}</strong><br>
+                        🏗️ Build Rate : ${scores.buildRate.toFixed(2)}<br>
+                        ⭐ EXP Bonus : ${scores.expBonus.toFixed(2)}<br>
+                        🚩 Flaggy Rate : ${scores.flaggyRate.toFixed(2)}<br>
+                        📦 Engrenages placés : ${solution.grille.compterEngrenagesPlaces()}
+                    </div>
+                `;
+        }
+
+        resultatsDiv.innerHTML = html;
+      }
+
+      /**
+       * Copie les logs dans le presse-papiers
+       */
+      function copierLogs() {
+        const logsDiv = document.getElementById("logs");
+        const texte = logsDiv.innerText;
+
+        // Copie dans le presse-papiers
+        navigator.clipboard
+          .writeText(texte)
+          .then(() => {
+            ajouterLog("✅ Logs copiés dans le presse-papiers !", "success");
+
+            // Message temporaire
+            setTimeout(() => {
+              const dernierLog = logsDiv.lastChild;
+              if (
+                dernierLog &&
+                dernierLog.textContent.includes("Logs copiés")
+              ) {
+                dernierLog.style.opacity = "0.5";
+              }
+            }, 2000);
+          })
+          .catch((err) => {
+            ajouterLog("❌ Erreur lors de la copie : " + err, "error");
+          });
+      }
+    </script>
+  </body>
+</html>
