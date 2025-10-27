@@ -502,3 +502,24 @@ hr {
   top: -1000px;
   opacity: 0;
 }
+
+/* Force l'affichage des résultats EN DESSOUS de la grille */
+#steps {
+  display: block !important;
+  width: 100% !important;
+  clear: both !important;
+  margin-top: 20px !important;
+  position: relative !important;
+  float: none !important;
+}
+
+/* S'assure que le conteneur parent ne crée pas de colonnes */
+#currentBoard {
+  display: block !important;
+  width: 100% !important;
+}
+
+/* Force le conteneur parent à afficher les éléments en dessous */
+#result {
+  display: block !important;
+}

@@ -1,24 +1,25 @@
 /**
  * ========================================
- * SOLVER - ADAPTATEUR POUR SOLVEUR v2.0
+ * RÉSOLVEUR - ADAPTATEUR POUR OPTIMISEUR v2.0
  * ========================================
  *
- * Ce fichier fait le pont entre l'ancien système et le nouveau Solveur.js
+ * Ce fichier fait le pont entre l'ancien système et le nouveau Optimiseur.js
  * Il permet à l'interface existante de fonctionner avec le nouvel algorithme génétique
  *
  * AUTEUR : Latury
  * DATE : 26 octobre 2025
+ * DERNIÈRE MISE À JOUR : 26 octobre 2025 - 22h45
  */
 
-class Solver {
+class Resolveur {
   constructor() {
-    this.weights = {
+    this.poids = {
       buildRate: 1.0,
       expBonus: 1.0,
       flaggyRate: 1.0,
     };
 
-    console.log("🔧 Solver adaptateur initialisé");
+    console.log("🔧 Résolveur adaptateur initialisé (Optimiseur.js)");
   }
 
   /**
@@ -27,28 +28,28 @@ class Solver {
    * @param {number} expBonus - Poids du bonus d'expérience
    * @param {number} flaggy - Poids du taux de drapeaux
    */
-  setWeights(buildRate, expBonus, flaggy) {
+  definirPoids(buildRate, expBonus, flaggy) {
     // Met à jour les poids globaux du nouveau système
     POIDS_OBJECTIFS.buildRate = buildRate;
     POIDS_OBJECTIFS.expBonus = expBonus;
     POIDS_OBJECTIFS.flaggyRate = flaggy;
 
-    this.weights.buildRate = buildRate;
-    this.weights.expBonus = expBonus;
-    this.weights.flaggyRate = flaggy;
+    this.poids.buildRate = buildRate;
+    this.poids.expBonus = expBonus;
+    this.poids.flaggyRate = flaggy;
 
-    console.log("⚖️ Poids définis :", this.weights);
+    console.log("⚖️ Poids définis :", this.poids);
   }
 
   /**
    * Lance l'optimisation
    * @param {CogInventory} cogInventory - L'inventaire des engrenages
-   * @param {number} solveTime - Temps d'optimisation en millisecondes
+   * @param {number} tempsResolution - Temps d'optimisation en millisecondes
    * @returns {Promise<CogInventory>} La meilleure solution trouvée
    */
-  async solve(cogInventory, solveTime = 2500) {
+  async resoudre(cogInventory, tempsResolution = 2500) {
     console.log("🚀 Début de l'optimisation");
-    console.log(`⏱️ Temps alloué : ${solveTime}ms`);
+    console.log(`⏱️ Temps alloué : ${tempsResolution}ms`);
 
     try {
       // Convertit l'inventaire en liste d'engrenages pour le nouveau système
@@ -58,9 +59,9 @@ class Solver {
 
       // Ajuste le nombre de générations en fonction du temps disponible
       const generationsOriginales = CONFIG_ALGO_GENETIQUE.nombreGenerations;
-      CONFIG_ALGO_GENETIQUE.nombreGenerations = Math.floor(solveTime / 10);
+      CONFIG_ALGO_GENETIQUE.nombreGenerations = Math.floor(tempsResolution / 10);
 
-      // Appelle le nouveau système d'optimisation
+      // Appelle le nouveau système d'optimisation (Optimiseur.js)
       const solutions = optimiserPlacementCogs(
         engrenagesDisponibles,
         (pourcentage, meilleureSolution) => {
@@ -107,23 +108,23 @@ class Solver {
     const engrenages = [];
 
     // Parcourt tous les engrenages de l'inventaire
-    for (let key in cogInventory.cogs) {
-      const cog = cogInventory.cogs[key];
+    for (let cle in cogInventory.cogs) {
+      const engrenage = cogInventory.cogs[cle];
 
-      if (!cog || cog.icon === "Blank") {
+      if (!engrenage || engrenage.icon === "Blank") {
         continue;
       }
 
       // Crée un nouvel engrenage avec le nouveau système
-      const engrenage = new Engrenage(
-        cog.icon,
-        cog.buildRate || 0,
-        cog.expBonus || 0,
-        cog.flaggy || 0,
+      const nouvelEngrenage = new Engrenage(
+        engrenage.icon,
+        engrenage.buildRate || 0,
+        engrenage.expBonus || 0,
+        engrenage.flaggy || 0,
         1 // Niveau par défaut
       );
 
-      engrenages.push(engrenage);
+      engrenages.push(nouvelEngrenage);
     }
 
     return engrenages;
@@ -142,12 +143,12 @@ class Solver {
     // Vide la grille actuelle
     for (let y = 0; y < CONFIG_GRILLE.hauteur; y++) {
       for (let x = 0; x < CONFIG_GRILLE.largeur; x++) {
-        const key = y * CONFIG_GRILLE.largeur + x;
-        if (resultat.cogs[key]) {
-          resultat.cogs[key].icon = "Blank";
-          resultat.cogs[key].buildRate = 0;
-          resultat.cogs[key].expBonus = 0;
-          resultat.cogs[key].flaggy = 0;
+        const cle = y * CONFIG_GRILLE.largeur + x;
+        if (resultat.cogs[cle]) {
+          resultat.cogs[cle].icon = "Blank";
+          resultat.cogs[cle].buildRate = 0;
+          resultat.cogs[cle].expBonus = 0;
+          resultat.cogs[cle].flaggy = 0;
         }
       }
     }
@@ -158,13 +159,13 @@ class Solver {
         const caseGrille = solution.grille.obtenirCase(x, y);
 
         if (caseGrille && caseGrille.engrenage) {
-          const key = y * CONFIG_GRILLE.largeur + x;
+          const cle = y * CONFIG_GRILLE.largeur + x;
 
-          if (resultat.cogs[key]) {
-            resultat.cogs[key].icon = caseGrille.engrenage.nom;
-            resultat.cogs[key].buildRate = caseGrille.engrenage.buildRate;
-            resultat.cogs[key].expBonus = caseGrille.engrenage.expBonus;
-            resultat.cogs[key].flaggy = caseGrille.engrenage.flaggyRate;
+          if (resultat.cogs[cle]) {
+            resultat.cogs[cle].icon = caseGrille.engrenage.nom;
+            resultat.cogs[cle].buildRate = caseGrille.engrenage.buildRate;
+            resultat.cogs[cle].expBonus = caseGrille.engrenage.expBonus;
+            resultat.cogs[cle].flaggy = caseGrille.engrenage.flaggyRate;
           }
         }
       }
@@ -175,9 +176,22 @@ class Solver {
 
     return resultat;
   }
+
+  // Alias pour compatibilité avec l'ancien code
+  setWeights(buildRate, expBonus, flaggy) {
+    return this.definirPoids(buildRate, expBonus, flaggy);
+  }
+
+  async solve(cogInventory, tempsResolution) {
+    return this.resoudre(cogInventory, tempsResolution);
+  }
 }
+
+// Alias pour compatibilité avec l'ancien code
+const Solver = Resolveur;
 
 // Export pour utilisation dans le navigateur
 if (typeof window !== "undefined") {
-  window.Solver = Solver;
+  window.Resolveur = Resolveur;
+  window.Solver = Solver; // Alias de compatibilité
 }

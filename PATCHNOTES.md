@@ -323,3 +323,62 @@ Le projet suit le format de versioning sémantique :
 - Ajouter la visualisation des mouvements d'engrenages
 - Améliorer l'affichage de la grille optimisée
 - Ajouter des statistiques de progression
+
+
+
+
+### ⏸️ État actuel de la v0.3.0
+
+**Statut** : En pause (fonctionnelle mais incomplète)
+
+**Date de mise en pause** : 27 octobre 2025
+
+**Ce qui fonctionne** :
+- ✅ Algorithme génétique 100% opérationnel
+- ✅ Interface complètement traduite en français
+- ✅ Adaptateur Solver.js fonctionnel
+- ✅ Console de logs intégrée avec boutons Copier/Effacer
+- ✅ Tests réussis avec données réelles (119 engrenages)
+- ✅ Optimisation en moins d'1 seconde
+
+**Ce qui reste à faire** :
+- ⏳ Affichage détaillé des étapes de placement
+- ⏳ Visualisation des mouvements d'engrenages
+- ⏳ Améliorer l'affichage de la grille optimisée
+- ⏳ Ajouter des statistiques de progression détaillées
+
+**Raison de la pause** :
+Version fonctionnelle et utilisable. Les fonctionnalités manquantes ne bloquent pas l'utilisation.
+Décision de passer à la v0.4.0 pour ajouter des fonctionnalités plus prioritaires (sauvegarde, export/import).
+
+**Note importante** : Cette version est stable et peut être utilisée. Les améliorations restantes sont considérées comme "bonus".
+
+
+---
+
+## Version 0.4.0 - En cours de développement
+[](https://github.com/Latury/Jarvis-Cog-Optimisateur/blob/main/PATCHNOTES.md#version-040---en-cours-de-d%C3%A9veloppement)
+
+**Date de début** : 27 octobre 2025
+
+### ⚙️ Nouvelles fonctionnalités en cours
+[](https://github.com/Latury/Jarvis-Cog-Optimisateur/blob/main/PATCHNOTES.md#%EF%B8%8F-nouvelles-fonctionnalit%C3%A9s-en-cours)
+
+**Objectifs** :
+- Système de sauvegarde automatique des configurations
+- Exporter/Importer au format JSON
+- Historique des optimisations
+- Tutoriel interactif pour les débutants
+- Calculateur de progression (estimation du temps pour débloquer tous les slots)
+- Comparateur de configurations
+
+**Ordre de développement prévu** :
+1. ⏳ Système de sauvegarde automatique (en cours)
+2. ⏳ Exporter/Importer JSON
+3. ⏳ Historique des optimisations
+4. ⏳ Calculateur de progression
+5. ⏳ Comparateur de configurations
+6. ⏳ Tutoriel interactif
+
+**État actuel** :
+- 🚧 En cours : Création du système de sauvegarde automatique
