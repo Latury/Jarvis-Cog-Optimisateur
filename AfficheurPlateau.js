@@ -145,16 +145,6 @@ class AfficheurPlateau {
         col.appendChild(div);
       }
 
-      // DEBUG : Affiche les informations de l'engrenage
-      if (engrenage.icone !== "Blank") {
-        console.log("🔧 DEBUG Engrenage:", {
-          icone: engrenage.icone,
-          estJoueur: engrenage.estJoueur,
-          type: engrenage.icone ? engrenage.icone.type : "undefined",
-          path: engrenage.icone ? engrenage.icone.path : "undefined",
-        });
-      }
-
       if (
         engrenage.icone === "Blank" ||
         (engrenage.icone && engrenage.icone.type === "blank")
@@ -166,12 +156,10 @@ class AfficheurPlateau {
         engrenage.icone &&
         engrenage.icone.path
       ) {
-        console.log("👤 Affichage joueur:", engrenage.icone.path);
         div.style.backgroundImage = `url("${engrenage.icone.path}")`;
         div.style.backgroundSize = "contain";
         div.innerHTML = "";
       } else if (engrenage.icone && engrenage.icone.path) {
-        console.log("⚙️ Affichage engrenage:", engrenage.icone.path);
         div.style.removeProperty("background-size");
         div.style.backgroundImage = `url("${engrenage.icone.path}")`;
         div.innerHTML = "";

@@ -523,3 +523,85 @@ hr {
 #result {
   display: block !important;
 }
+/* ========================================
+   AMÉLIORATIONS INTERFACE
+   ======================================== */
+
+/* Boutons principaux */
+button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+button:disabled {
+  background: #95a5a6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Bouton Optimiser (spécial) */
+#optimize-button {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  font-size: 16px;
+  padding: 14px 28px;
+}
+
+#optimize-button:hover {
+  box-shadow: 0 6px 20px rgba(245, 87, 108, 0.4);
+}
+
+/* Onglets */
+.tabs button {
+  background: transparent;
+  border-bottom: 3px solid transparent;
+  box-shadow: none;
+  padding: 10px 20px;
+  margin: 0 5px;
+  font-weight: 500;
+}
+
+.tabs button:hover {
+  background: rgba(102, 126, 234, 0.1);
+  transform: none;
+}
+
+.tabs button.active {
+  border-bottom-color: #667eea;
+  color: #667eea;
+}
+
+/* Logs */
+#log-container {
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Paramètres */
+#settings {
+  padding: 20px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+#settings label {
+  font-weight: 500;
+  color: #e0e0e0;
+}
