@@ -250,7 +250,7 @@ class InventaireEngrenages {
         if (!chapeauTrouve) {
           iconesChapeaux[nom] = {
             type: "head",
-            path: "icons/head.png",
+            path: "assets/icons/head.png",
           };
         }
       });
@@ -273,19 +273,19 @@ class InventaireEngrenages {
       } else if (c.startsWith("Player")) {
         icone = iconesChapeaux[c.substring(7)] || {
           type: "head",
-          path: "icons/head.png",
+          path: "assets/icons/head.png",
         };
       } else if (c === "CogY") {
         icone.type = "cog";
-        icone.path = "icons/cogs/Yang_Cog.png";
+        icone.path = "assets/icons/cogs/Yang_Cog.png";
       } else {
         icone.type = "cog";
         const analyse = c.match(/^Cog([0123YZ])(.{2,3})$/);
         if (analyse[1] === "Z") {
-          icone.path = "icons/cogs/" + CARTE_YIN[analyse[2]] + ".png";
+          icone.path = "assets/icons/cogs/" + CARTE_YIN[analyse[2]] + ".png";
         } else {
           icone.path =
-            "icons/cogs/" +
+            "assets/icons/cogs/" +
             CARTE_TYPE_ICONE[analyse[2]] +
             "_" +
             CARTE_QUALITE_ICONE[analyse[1]] +

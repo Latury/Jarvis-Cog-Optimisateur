@@ -180,7 +180,7 @@ class AfficheurPlateau {
       }
     } else {
       if (engrenage.isFlag) {
-        col.style.backgroundImage = `url("icons/cogs/flag.png")`;
+        col.style.backgroundImage = `url("assets/icons/cogs/flag.png")`;
       }
     }
   }

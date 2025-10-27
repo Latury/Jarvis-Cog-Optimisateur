@@ -34,7 +34,8 @@ class AfficheurJoueur {
 
     // Charge l'image de la tête
     const tete = document.createElement("img");
-    tete.src = "icons/head.png";
+    tete.src = "assets/icons/head.png";
+
     tete.style.visibility = "hidden";
     document.body.appendChild(tete);
     this._imgTete = tete;
