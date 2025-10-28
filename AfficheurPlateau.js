@@ -159,12 +159,44 @@ class AfficheurPlateau {
         div.style.backgroundImage = `url("${engrenage.icone.path}")`;
         div.style.backgroundSize = "contain";
         div.innerHTML = "";
-      } else if (engrenage.icone && engrenage.icone.path) {
+      } else if (
+        engrenage.icone &&
+        typeof engrenage.icone === "object" &&
+        engrenage.icone.path
+      ) {
         div.style.removeProperty("background-size");
         div.style.backgroundImage = `url("${engrenage.icone.path}")`;
         div.innerHTML = "";
+      } else if (
+        typeof engrenage.icone === "string" &&
+        engrenage.icone !== "Blank"
+      ) {
+        div.style.removeProperty("background-size");
+        div.style.backgroundImage = `url("${engrenage.icone}")`;
+        div.innerHTML = "";
       } else {
+        // Debug : affiche la structure de l'icône
+        console.log(
+          "🔍 Debug icône détaillé:",
+          JSON.stringify(
+            {
+              icone: engrenage.icone,
+              type: typeof engrenage.icone,
+              hasPath: engrenage.icone?.path,
+              keys: engrenage.icone ? Object.keys(engrenage.icone) : [],
+            },
+            null,
+            2
+          )
+        );
         console.warn("⚠️ Icône invalide pour engrenage:", engrenage);
+        div.style.backgroundImage = "";
+        div.innerHTML = "?";
+        div.style.display = "flex";
+        div.style.alignItems = "center";
+        div.style.justifyContent = "center";
+        div.style.fontSize = "20px";
+        div.style.fontWeight = "bold";
       }
     } else {
       if (engrenage.isFlag) {
@@ -218,7 +250,6 @@ class AfficheurPlateau {
     return this.plateau[index];
   }
 
-  // Alias pour compatibilité avec l'ancien code
   createHTMLElement() {
     return this.creerElementHTML();
   }
@@ -244,5 +275,4 @@ class AfficheurPlateau {
   }
 }
 
-// Alias pour compatibilité avec l'ancien code
 const BoardRenderer = AfficheurPlateau;

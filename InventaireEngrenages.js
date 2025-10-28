@@ -1,14 +1,5 @@
 console.log("✅ InventaireEngrenages.js chargé !");
 
-/**
- * ========================================
- * JARVIS COG OPTIMISATEUR - INVENTAIRE
- * ========================================
- *
- * Gestion de l'inventaire des engrenages (Cogs)
- * Version française complète
- */
-
 const CARTE_QUALITE_ICONE = {
   ["0"]: "Nooby",
   ["1"]: "Decent",
@@ -179,6 +170,14 @@ class InventaireEngrenages {
     this._score = null;
     console.log("📦 Chargement des données de sauvegarde...");
 
+    // Debug : Afficher toutes les clés disponibles
+    console.log(
+      "🔍 Clés disponibles dans les données:",
+      Object.keys(sauvegarde).filter(
+        (k) => k.includes("Cog") || k.includes("Flag")
+      )
+    );
+
     let classes = [];
     classes[1] = "Débutant";
     classes[2] = "Compagnon";
@@ -256,15 +255,47 @@ class InventaireEngrenages {
       });
     }
 
-    this.ameliorationsBoutiqueFlaggy = JSON.parse(
-      sauvegarde["GemItemsPurchased"]
-    )[118];
-    console.log(
-      `💎 Améliorations Flaggy (boutique): ${this.ameliorationsBoutiqueFlaggy}`
-    );
+    // Gestion sécurisée des améliorations Flaggy
+    const gemItemsData = sauvegarde["GemItemsPurchased"];
+    if (gemItemsData && gemItemsData !== "undefined") {
+      try {
+        this.ameliorationsBoutiqueFlaggy = JSON.parse(gemItemsData)[118] || 0;
+        console.log(
+          `💎 Améliorations Flaggy (boutique): ${this.ameliorationsBoutiqueFlaggy}`
+        );
+      } catch (error) {
+        console.warn(
+          "⚠️ Impossible de charger GemItemsPurchased:",
+          error.message
+        );
+        this.ameliorationsBoutiqueFlaggy = 0;
+      }
+    } else {
+      console.warn("⚠️ GemItemsPurchased non trouvé dans les données");
+      this.ameliorationsBoutiqueFlaggy = 0;
+    }
 
-    const engrenageschBrut = JSON.parse(sauvegarde["CogM"]);
-    const iconesEngrenages = JSON.parse(sauvegarde["CogO"]).map((c) => {
+    // Chargement sécurisé des engrenages
+    const cogMData = sauvegarde["CogM"];
+    const cogOData = sauvegarde["CogO"];
+
+    console.log("📊 CogM existe ?", cogMData ? "OUI" : "NON");
+    console.log("📊 CogO existe ?", cogOData ? "OUI" : "NON");
+
+    if (!cogMData || cogMData === "undefined") {
+      throw new Error(
+        "❌ Données CogM manquantes.\n\nCauses possibles:\n1. Les Cogs ne sont pas débloqués dans le jeu\n2. Données IdleonToolbox incomplètes\n3. Essayez de resynchroniser sur IdleonToolbox"
+      );
+    }
+
+    if (!cogOData || cogOData === "undefined") {
+      throw new Error(
+        "❌ Données CogO manquantes.\n\nCauses possibles:\n1. Les Cogs ne sont pas débloqués dans le jeu\n2. Données IdleonToolbox incomplètes\n3. Essayez de resynchroniser sur IdleonToolbox"
+      );
+    }
+
+    const engrenageschBrut = JSON.parse(cogMData);
+    const iconesEngrenages = JSON.parse(cogOData).map((c) => {
       let icone = { type: "cog" };
 
       if (c === "Blank") {
@@ -318,10 +349,25 @@ class InventaireEngrenages {
       }
     );
 
-    this.positionsDrapeaux = JSON.parse(sauvegarde["FlagP"]).filter(
-      (v) => v >= 0
-    );
-    const emplacements = JSON.parse(sauvegarde["FlagU"]).map((n, i) => {
+    // Chargement sécurisé des drapeaux
+    const flagPData = sauvegarde["FlagP"];
+    const flagUData = sauvegarde["FlagU"];
+
+    console.log("📊 FlagP existe ?", flagPData ? "OUI" : "NON");
+    console.log("📊 FlagU existe ?", flagUData ? "OUI" : "NON");
+
+    if (!flagPData || flagPData === "undefined") {
+      console.warn("⚠️ FlagP non trouvé, initialisation par défaut");
+      this.positionsDrapeaux = [];
+    } else {
+      this.positionsDrapeaux = JSON.parse(flagPData).filter((v) => v >= 0);
+    }
+
+    if (!flagUData || flagUData === "undefined") {
+      throw new Error("❌ Données FlagU manquantes.");
+    }
+
+    const emplacements = JSON.parse(flagUData).map((n, i) => {
       if (n > 0 && this.positionsDrapeaux.includes(i)) {
         return new Engrenage({
           key: i,
@@ -600,7 +646,6 @@ class InventaireEngrenages {
   }
 }
 
-// Alias pour compatibilité avec l'ancien code
 const CogInventory = InventaireEngrenages;
 const Cog = Engrenage;
 const FakeBoard = PlateauSimule;

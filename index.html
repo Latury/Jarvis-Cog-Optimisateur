@@ -16,7 +16,6 @@
   <script type="text/javascript" src="AfficheurJoueur.js"></script>
   <script type="text/javascript" src="GestionPages.js"></script>
 
-
   <title>Jarvis Cog Optimisateur</title>
 
   <style>
@@ -85,6 +84,7 @@
       border-left-color: #3498db;
     }
   </style>
+
 </head>
 
 <body>
@@ -122,7 +122,6 @@
     </div>
     <div class="spacer"></div>
   </div>
-
   <div class="content">
     <!-- Popup de tutoriel -->
     <div id="tutorialPopup" style="
@@ -190,12 +189,35 @@
     </div>
 
     <div id="result">
-      <div class="info">
-        <div id="spare">---Placeholder---</div>
-        <div id="sparepage"></div>
-      </div>
-      <div class="border" id="border"></div>
+      <!-- COLONNE GAUCHE : Inventaire + Stats actuelles -->
+      <div id="leftColumn" class="column">
+        <div class="info">
+          <div id="spare">---Placeholder---</div>
+          <div id="sparepage"></div>
+        </div>
 
+        <!-- Stats actuelles (affichées après chargement) -->
+        <div id="currentStats" style="display: none;"></div>
+      </div>
+
+      <!-- COLONNE CENTRE : Grille + Head -->
+      <div id="centerColumn" class="column">
+        <div id="currentBoard"></div>
+      </div>
+
+      <!-- COLONNE DROITE : Stats comparatives + Étapes -->
+      <div id="rightColumn" class="column">
+        <!-- Tableau récapitulatif compact -->
+        <div id="summaryStats" style="display: none;"></div>
+
+        <!-- Stats détaillées avant/après -->
+        <div id="detailedStats" style="display: none;"></div>
+
+        <!-- Étapes de déplacement -->
+        <div id="steps"></div>
+      </div>
+
+      <!-- Settings (popup paramètres) -->
       <div id="settings" style="display: none;">
         <p>
           <label for="flaggyShop">Améliorations Flaggy (Boutique gemmes)</label><br />
@@ -229,32 +251,25 @@
         </p>
       </div>
     </div>
-    <div id="currentBoard"></div>
-    <div id="steps"></div>
-  </div>
 
-  <!-- Console de logs pour debug -->
-  <div id="logConsole">
-    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-      <span style="color: #ff6b6b; font-weight: bold;">📋 Console de Debug</span>
-      <div>
-        <button onclick="copyLogs()"
-          style="background: #3498db; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 3px; margin-right: 5px;">📋
-          Copier</button>
-        <button onclick="clearLogs()"
-          style="background: #e74c3c; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 3px;">Effacer</button>
+    <!-- Console de logs pour debug -->
+    <div id="logConsole">
+      <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+        <span style="color: #ff6b6b; font-weight: bold;">📋 Console de Debug</span>
+        <div>
+          <button onclick="copyLogs()"
+            style="background: #3498db; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 3px; margin-right: 5px;">📋
+            Copier</button>
+          <button onclick="clearLogs()"
+            style="background: #e74c3c; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 3px;">Effacer</button>
+        </div>
       </div>
+      <div id="logContent"></div>
     </div>
-    <div id="logContent"></div>
-  </div>
   </div>
 
   <!-- Bouton pour afficher/masquer les logs -->
   <button id="toggleLogs">📋 Logs</button>
-
-
-
-
   <script type="text/javascript">
     // ========================================
     // SYSTÈME DE LOGS POUR DEBUG
@@ -530,7 +545,6 @@
       }
       document.getElementById("steps").appendChild(toAdd);
     }
-
     f.getOptimalSteps = (board, cogs) => {
       const steps = [];
 
@@ -597,19 +611,38 @@
 
       return str.toString();
     }
+
+    function stepsChangeHandler(ev) {
+      if (!window.g.best) return;
+      const steps = f.getOptimalSteps(window.g.best.board, window.g.best.cogs);
+      if (ev.page < steps.length) {
+        const step = steps[ev.page];
+        const pos1 = step.cog.position(step.keyFrom);
+        const pos2 = step.targetCog.position(step.keyTo);
+
+        window.boardRenderer.get(pos1.y, pos1.x).elem.classList.add("toMove");
+        window.boardRenderer.get(pos2.y, pos2.x).elem.classList.add("toMove");
+      }
+    }
+
     function load(save) {
       try {
         console.log("🔄 Démarrage du chargement...");
 
         console.log("📦 Chargement des données de sauvegarde...");
-        cogInventory.load(save);
-        console.log("✅ Inventaire chargé");
+
+        // Vérifier que les données ne sont pas vides
+        if (!save || save.trim() === "" || save === "undefined") {
+          throw new Error("Les données sont vides ou invalides. Veuillez coller vos données depuis IdleonToolbox.com/data");
+        }
+
+        cogInventory.load(JSON.parse(save));
+
 
         document.getElementById("flaggyShop").value = cogInventory.ameliorationsBoutiqueFlaggy;
         console.log("💎 Améliorations Flaggy (boutique):", cogInventory.ameliorationsBoutiqueFlaggy);
         console.log("✅ Flaggy shop mis à jour");
 
-        // Charger les engrenages spare
         for (let i = 108; i < 200; i++) {
           const engrenage = cogInventory.engrenages[i];
 
@@ -621,14 +654,12 @@
         }
         console.log("✅ Engrenages spare affichés");
 
-        // Recalculer le nombre de pages
         window.spareRenderer._pageCount = Math.ceil(Object.keys(cogInventory.engrenages).filter(k => parseInt(k) >= 108).length / 3);
-        window.sparePage.nombrePages = window.spareRenderer._pageCount;  // ✅ UTILISE nombrePages
-        window.sparePage.indexPage = 0;  // ✅ AJOUTE indexPage
+        window.sparePage.nombrePages = window.spareRenderer._pageCount;
+        window.sparePage.indexPage = 0;
         window.sparePage.goto(0);
         console.log("📄 Nombre de pages spare recalculé:", window.spareRenderer._pageCount);
         console.log("✅ Page spare initialisée");
-
 
         const initScore = cogInventory.score;
 
@@ -638,55 +669,24 @@
         document.getElementById("solve").disabled = "";
         console.log("✅ Bouton optimiser activé");
 
-        const stepsContainer = document.getElementById("steps");
-        console.log("✅ stepsContainer récupéré");
-
-        stepsContainer.remove();
-        console.log("✅ stepsContainer retiré");
-
-        const currentBoard = document.getElementById("currentBoard");
-        currentBoard.parentElement.insertBefore(stepsContainer, currentBoard.nextSibling);
-        console.log("✅ stepsContainer replacé");
-
-        stepsContainer.style.display = "block";
-        stepsContainer.style.width = "100%";
-        stepsContainer.style.clear = "both";
-        stepsContainer.style.marginTop = "20px";
-        console.log("✅ Styles appliqués");
-
-        stepsContainer.innerHTML = `
-            <div style="padding: 25px; background: linear-gradient(135deg, #16213e 0%, #1a2740 100%); border-radius: 10px; margin-top: 20px; border: 2px solid #3498db; box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);">
-              <h2 style="color: #3498db; margin: 0 0 25px 0; text-align: center; font-size: 24px;">
-                📊 STATS ACTUELLES
-              </h2>
-              <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-                <div style="background: #0f1923; padding: 25px; border-radius: 8px; border: 2px solid #3498db; text-align: center;">
-                  <div style="color: #95a5a6; font-size: 13px; margin-bottom: 10px;">🏗️ Vitesse de construction</div>
-                  <div style="color: #3498db; font-weight: bold; font-size: 28px;">
-                    ${mmoifyNumber(initScore.buildRate, false)}/HR
-                  </div>
-                </div>
-                <div style="background: #0f1923; padding: 25px; border-radius: 8px; border: 2px solid #9b59b6; text-align: center;">
-                  <div style="color: #95a5a6; font-size: 13px; margin-bottom: 10px;">⭐ Bonus XP Joueur</div>
-                  <div style="color: #9b59b6; font-weight: bold; font-size: 28px;">
-                    ${mmoifyNumber(initScore.expBonus, false)}%
-                  </div>
-                </div>
-                <div style="background: #0f1923; padding: 25px; border-radius: 8px; border: 2px solid #e67e22; text-align: center;">
-                  <div style="color: #95a5a6; font-size: 13px; margin-bottom: 10px;">🚩 Taux de Flaggy</div>
-                  <div style="color: #e67e22; font-weight: bold; font-size: 28px;">
-                    ${mmoifyNumber(initScore.flaggy, false)}/HR
-                  </div>
-                </div>
-              </div>
-              <div style="text-align: center; padding: 15px; background: rgba(52, 152, 219, 0.1); border-radius: 5px;">
-                <p style="color: #95a5a6; margin: 0; font-size: 13px;">
-                  💡 <strong>Astuce :</strong> Cliquez sur "Optimiser" pour améliorer votre configuration !
-                </p>
-              </div>
-            </div>
-          `;
-        console.log("✅ HTML des stats inséré");
+        const currentStats = document.getElementById("currentStats");
+        currentStats.style.display = "block";
+        currentStats.innerHTML = `
+          <h3 style="color: #3498db; font-size: 16px; margin-bottom: 10px;">📊 STATS ACTUELLES</h3>
+          <div style="margin: 8px 0;">
+            <div style="color: #95a5a6; font-size: 11px;">🏗️ Vitesse construction</div>
+            <div style="color: #3498db; font-weight: bold;">${mmoifyNumber(initScore.buildRate, false)}/HR</div>
+          </div>
+          <div style="margin: 8px 0;">
+            <div style="color: #95a5a6; font-size: 11px;">⭐ Bonus XP</div>
+            <div style="color: #9b59b6; font-weight: bold;">${mmoifyNumber(initScore.expBonus, false)}%</div>
+          </div>
+          <div style="margin: 8px 0;">
+            <div style="color: #95a5a6; font-size: 11px;">🚩 Taux Flaggy</div>
+            <div style="color: #e67e22; font-weight: bold;">${mmoifyNumber(initScore.flaggy, false)}/HR</div>
+          </div>
+        `;
+        console.log("✅ Stats actuelles affichées");
 
         for (let oneOption of [...OPTIMIZABLE, "solveTime"]) {
           const val = localStorage.getItem(oneOption);
@@ -708,221 +708,11 @@
         console.log("✅ Tous les boutons activés");
 
         console.log("🎉 CHARGEMENT TERMINÉ AVEC SUCCÈS !");
-
       } catch (error) {
-        console.error("❌ ERREUR LORS DU CHARGEMENT:", error);
-        console.error("❌ Stack trace:", error.stack);
+        console.error("❌ Erreur lors du chargement:", error);
+        alert("Erreur lors du chargement: " + error.message);
       }
     }
-
-    function fetchAndLoadConfig(username) {
-      console.log("Tentative de récupération", username);
-      if (username.length > 0) {
-        const headers = {
-          "Content-Type": "text/json",
-          method: "GET"
-        };
-        fetch(`https://cdn.idleonefficiency.com/profiles/${username.toLowerCase()}.json`, headers)
-          .then((response) => {
-            return response.json();
-          }).then((json) => {
-            load(json);
-          }).catch((reason) => {
-            console.log(reason);
-          });
-      }
-    }
-
-    document.getElementById("load").addEventListener("click", () => {
-      const input = document.getElementById("input").value;
-      try {
-        const save = JSON.parse(input);
-        load(save);
-      } catch (e) {
-        if (e instanceof SyntaxError) {
-          fetchAndLoadConfig(input);
-        }
-      }
-    });
-
-    let optimalSteps = undefined;
-
-    function stepsChangeHandler(ev) {
-      const clone = cogInventory.clone();
-      for (let i = 0; i < ev.page; i++) {
-        const step = optimalSteps[i];
-        clone.move(step.keyFrom, step.keyTo);
-      }
-
-      const currentStep = optimalSteps[ev.page];
-      const pos1 = currentStep.cog.position(currentStep.keyFrom);
-      const pos2 = currentStep.targetCog.position(currentStep.keyTo);
-
-      f.printBoard(clone.board);
-      window.boardRenderer.move(pos1, pos2);
-
-      if (pos1.location == "spare" || pos2.location == "spare") {
-        let pos = pos1;
-        if (pos2.location == "spare") {
-          pos = pos2;
-        }
-        const page = window.spareRenderer.getPage(pos);
-        if (page != -1) {
-          sparePage.goto(page);
-        }
-      }
-
-      window.spareRenderer.move(pos1, pos2);
-
-      const renderer = {
-        [window.boardRenderer._type]: window.boardRenderer,
-        [window.spareRenderer._type]: window.spareRenderer
-      };
-
-      const pos1Slot = renderer[pos1.location].get(pos1.y, pos1.x);
-      const pos2Slot = renderer[pos2.location].get(pos2.y, pos2.x);
-
-      if (pos1Slot.item && pos1Slot.item.icon !== "Blank" && pos1Slot.elem.childNodes.length === 1) {
-        const from = pos1Slot.elem.childNodes[0];
-        animateSwitchFrom(from, pos2Slot.elem.getBoundingClientRect());
-      }
-      if (pos2Slot.item && pos2Slot.item.icon !== "Blank" && pos2Slot.elem.childNodes.length === 1) {
-        const to = pos2Slot.elem.childNodes[0];
-        animateSwitchTo(to, pos1Slot.elem.getBoundingClientRect());
-      }
-    }
-    document.getElementById("solve").onclick = async () => {
-      const solveTime = getInput("solveTime") || 2500;
-      localStorage.setItem("solveTime", solveTime);
-      document.getElementById("solvetext").innerText = "Optimisation...";
-      document.getElementById("steps").innerHTML = "";
-      let lastYield = Date.now();
-      await yield();
-
-      console.log("Démarrage");
-
-      let start = cogInventory.clone();
-
-      const [buildRate, expBonus, flaggy] = [getInput("buildRate"), getInput("expBonus"), getInput("flaggy")];
-      localStorage.setItem("buildRate", buildRate);
-      localStorage.setItem("expBonus", expBonus);
-      localStorage.setItem("flaggy", flaggy);
-      solver.setWeights(getInput("buildRate"), getInput("expBonus"), getInput("flaggy"));
-      const best = await solver.solve(cogInventory, solveTime);
-
-      const buildRateGain = best.score.buildRate - start.score.buildRate;
-      const expBonusGain = best.score.expBonus - start.score.expBonus;
-      const flaggyGain = best.score.flaggy - start.score.flaggy;
-
-      const buildRatePercent = start.score.buildRate > 0 ? ((buildRateGain / start.score.buildRate) * 100).toFixed(1) : 0;
-      const expBonusPercent = start.score.expBonus > 0 ? ((expBonusGain / start.score.expBonus) * 100).toFixed(1) : 0;
-      const flaggyPercent = start.score.flaggy > 0 ? ((flaggyGain / start.score.flaggy) * 100).toFixed(1) : 0;
-
-      console.log("Affichage de la grille optimisée...");
-      f.printBoard(best.board);
-
-      const stepsContainer = document.getElementById("steps");
-      const parentDiv = stepsContainer.parentElement;
-
-      stepsContainer.remove();
-
-      const currentBoard = document.getElementById("currentBoard");
-      currentBoard.parentElement.insertBefore(stepsContainer, currentBoard.nextSibling);
-
-      stepsContainer.style.display = "block";
-      stepsContainer.style.width = "100%";
-      stepsContainer.style.clear = "both";
-      stepsContainer.style.marginTop = "20px";
-
-      stepsContainer.innerHTML = `
-          <div style="padding: 25px; background: linear-gradient(135deg, #16213e 0%, #1a2740 100%); border-radius: 10px; margin-top: 20px; border: 2px solid #2ecc71; box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3);">
-            <h2 style="color: #2ecc71; margin: 0 0 25px 0; text-align: center; font-size: 24px;">
-              ✅ OPTIMISATION RÉUSSIE !
-            </h2>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 20px;">
-              <div style="background: #0f1923; padding: 25px; border-radius: 8px; border: 2px solid #e74c3c;">
-                <h3 style="color: #e74c3c; margin: 0 0 20px 0; font-size: 20px; text-align: center;">📊 AVANT OPTIMISATION</h3>
-                <div style="border-top: 2px solid #2c3e50; margin: 10px 0 20px 0;"></div>
-                <div style="margin: 15px 0;">
-                  <div style="color: #95a5a6; font-size: 13px; margin-bottom: 5px;">🏗️ Vitesse de construction</div>
-                  <div style="color: #ecf0f1; font-weight: bold; font-size: 20px;">
-                    ${mmoifyNumber(start.score.buildRate, false)}/HR
-                  </div>
-                </div>
-                <div style="margin: 15px 0;">
-                  <div style="color: #95a5a6; font-size: 13px; margin-bottom: 5px;">⭐ Bonus XP Joueur</div>
-                  <div style="color: #ecf0f1; font-weight: bold; font-size: 20px;">
-                    ${mmoifyNumber(start.score.expBonus, false)}%
-                  </div>
-                </div>
-                <div style="margin: 15px 0;">
-                  <div style="color: #95a5a6; font-size: 13px; margin-bottom: 5px;">🚩 Taux de Flaggy</div>
-                  <div style="color: #ecf0f1; font-weight: bold; font-size: 20px;">
-                    ${mmoifyNumber(start.score.flaggy, false)}/HR
-                  </div>
-                </div>
-                <div style="border-top: 2px solid #2c3e50; margin: 20px 0 10px 0;"></div>
-                <div style="text-align: center; color: #95a5a6; font-weight: bold; font-size: 13px;">
-                  💰 Score initial : ${start.score.buildRate.toFixed(0)}
-                </div>
-              </div>
-              <div style="background: #0f1923; padding: 25px; border-radius: 8px; border: 2px solid #2ecc71;">
-                <h3 style="color: #2ecc71; margin: 0 0 20px 0; font-size: 20px; text-align: center;">📈 APRÈS OPTIMISATION</h3>
-                <div style="border-top: 2px solid #2c3e50; margin: 10px 0 20px 0;"></div>
-                <div style="margin: 15px 0;">
-                  <div style="color: #95a5a6; font-size: 13px; margin-bottom: 5px;">🏗️ Vitesse de construction</div>
-                  <div style="color: #2ecc71; font-weight: bold; font-size: 20px;">
-                    ${mmoifyNumber(best.score.buildRate, false)}/HR
-                  </div>
-                  ${buildRatePercent > 0 ? `<div style="color: #3498db; font-size: 15px; margin-top: 5px;">▲ +${mmoifyNumber(buildRateGain)}/HR (+${buildRatePercent}%)</div>` : ''}
-                </div>
-                <div style="margin: 15px 0;">
-                  <div style="color: #95a5a6; font-size: 13px; margin-bottom: 5px;">⭐ Bonus XP Joueur</div>
-                  <div style="color: ${expBonusGain >= 0 ? '#2ecc71' : '#ecf0f1'}; font-weight: bold; font-size: 20px;">
-                    ${mmoifyNumber(best.score.expBonus, false)}%
-                  </div>
-                  ${expBonusPercent > 0 ? `<div style="color: #3498db; font-size: 15px; margin-top: 5px;">▲ +${mmoifyNumber(expBonusGain)}% (+${expBonusPercent}%)</div>` : expBonusGain === 0 ? '<div style="color: #95a5a6; font-size: 14px; margin-top: 5px;">= Inchangé</div>' : ''}
-                </div>
-                <div style="margin: 15px 0;">
-                  <div style="color: #95a5a6; font-size: 13px; margin-bottom: 5px;">🚩 Taux de Flaggy</div>
-                  <div style="color: #2ecc71; font-weight: bold; font-size: 20px;">
-                    ${mmoifyNumber(best.score.flaggy, false)}/HR
-                  </div>
-                  ${flaggyPercent > 0 ? `<div style="color: #3498db; font-size: 15px; margin-top: 5px;">▲ +${mmoifyNumber(flaggyGain)}/HR (+${flaggyPercent}%)</div>` : ''}
-                </div>
-                <div style="border-top: 2px solid #2c3e50; margin: 20px 0 10px 0;"></div>
-                <div style="text-align: center; color: #2ecc71; font-weight: bold; font-size: 13px;">
-                  💰 Score final : ${best.score.buildRate.toFixed(0)}
-                </div>
-              </div>
-            </div>
-            <div style="background: rgba(52, 152, 219, 0.1); padding: 20px; border-radius: 8px; border-left: 4px solid #3498db;">
-              <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; color: #ecf0f1; font-size: 14px;">
-                <div style="text-align: center;">
-                  <div style="color: #3498db; font-weight: bold; font-size: 16px;">🧬 250</div>
-                  <div style="color: #95a5a6; font-size: 12px;">Générations</div>
-                </div>
-                <div style="text-align: center;">
-                  <div style="color: #9b59b6; font-weight: bold; font-size: 16px;">📦 ${Object.keys(best.cogs).length}</div>
-                  <div style="color: #95a5a6; font-size: 12px;">Engrenages</div>
-                </div>
-                <div style="text-align: center;">
-                  <div style="color: #e67e22; font-weight: bold; font-size: 16px;">⚡ < 1s</div>
-                  <div style="color: #95a5a6; font-size: 12px;">Temps d'exécution</div>
-                </div>
-              </div>
-            </div>
-            <div style="text-align: center; padding: 15px; margin-top: 15px; background: rgba(52, 152, 219, 0.05); border-radius: 5px;">
-              <p style="color: #95a5a6; margin: 0; font-size: 13px;">
-                💡 <strong>Astuce :</strong> Les étapes détaillées seront ajoutées dans la prochaine version
-              </p>
-            </div>
-          </div>
-        `;
-
-      document.getElementById("solvetext").innerText = "Optimiser";
-      openCogTab();
-    };
 
     function openCogTab() {
       document.getElementById("loader").style.display = "none";
@@ -943,9 +733,161 @@
     document.getElementById("loaderbtn").addEventListener("click", () => {
       openLoaderTab();
     });
+
     document.getElementById("cogbtn").addEventListener("click", () => {
       openCogTab();
     });
+
+    document.getElementById("load").addEventListener("click", () => {
+      try {
+        const input = document.getElementById("input").value;
+        console.log("📝 Valeur du textarea:", input ? `${input.length} caractères` : "VIDE !");
+
+        if (!input || input.trim() === "") {
+          alert("⚠️ La zone de texte est vide ! Collez d'abord les données depuis IdleonToolbox.com/data");
+          return;
+        }
+
+        load(input);
+        closeTutorial();
+      } catch (error) {
+        console.error("❌ Erreur:", error);
+        alert("Erreur: " + error.message);
+      }
+    });
+
+
+    document.getElementById("solve").onclick = async function () {
+      console.log("Démarrage");
+
+      document.getElementById("solvetext").innerText = "⏳";
+
+      for (let oneOption of OPTIMIZABLE) {
+        localStorage.setItem(oneOption, document.getElementById(oneOption).value);
+      }
+
+      const poids = {
+        buildRate: parseInt(document.getElementById("buildRate").value),
+        expBonus: parseInt(document.getElementById("expBonus").value),
+        flaggy: parseInt(document.getElementById("flaggy").value),
+      };
+
+      console.log("⚖️ Poids définis :", poids);
+
+      const start = window.cogInventory.copy();
+      const startScore = start.score;
+
+      try {
+        console.log("🚀 Début de l'optimisation");
+        const timeLimit = parseInt(document.getElementById("solveTime").value);
+        console.log("⏱️ Temps alloué :", timeLimit + "ms");
+
+        const best = await Optimiser.optimiser(window.cogInventory, poids, timeLimit);
+
+        if (!best || !best.score) {
+          throw new Error("Optimisation échouée");
+        }
+
+        console.log("✅ Optimisation terminée !");
+        console.log("🏆 Meilleur score :", best.score.buildRate);
+        console.log("📋 " + (best.etapes ? best.etapes.length : 0) + " déplacements à effectuer");
+
+        console.log("🔄 Conversion de la solution optimisée...");
+        const solutionConvertie = Optimiser.convertirSolution(best);
+        console.log("✅ Solution convertie avec succès");
+
+        const buildRateGain = best.score.buildRate - startScore.buildRate;
+        const expBonusGain = best.score.expBonus - startScore.expBonus;
+        const flaggyGain = best.score.flaggy - startScore.flaggy;
+
+        const buildRatePercent = ((buildRateGain / startScore.buildRate) * 100).toFixed(2);
+        const expBonusPercent = ((expBonusGain / startScore.expBonus) * 100).toFixed(2);
+        const flaggyPercent = ((flaggyGain / startScore.flaggy) * 100).toFixed(2);
+
+        console.log("Affichage de la grille optimisée...");
+        f.printBoard(solutionConvertie.board);
+
+        const summaryStats = document.getElementById("summaryStats");
+        summaryStats.style.display = "block";
+        summaryStats.innerHTML = `
+          <h3 style="color: #2ecc71; font-size: 16px; margin: 0 0 10px 0; text-align: center;">✅ OPTIMISATION RÉUSSIE</h3>
+          <div style="text-align: center; color: #ecf0f1; font-size: 13px;">
+            <div>📈 Score final: ${best.score.buildRate.toFixed(0)}</div>
+            <div style="color: #2ecc71; margin-top: 5px;">+${mmoifyNumber(buildRateGain)}/HR (${buildRatePercent > 0 ? '+' : ''}${buildRatePercent}%)</div>
+          </div>
+        `;
+
+        const detailedStats = document.getElementById("detailedStats");
+        detailedStats.style.display = "block";
+        detailedStats.innerHTML = `
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div>
+              <h4 style="color: #e74c3c; font-size: 14px; margin-bottom: 10px; text-align: center;">📊 AVANT</h4>
+              <div style="font-size: 11px; margin: 8px 0;">
+                <div style="color: #95a5a6;">🏗️ Construction</div>
+                <div style="color: #ecf0f1; font-weight: bold;">${mmoifyNumber(startScore.buildRate, false)}/HR</div>
+              </div>
+              <div style="font-size: 11px; margin: 8px 0;">
+                <div style="color: #95a5a6;">⭐ Bonus XP</div>
+                <div style="color: #ecf0f1; font-weight: bold;">${mmoifyNumber(startScore.expBonus, false)}%</div>
+              </div>
+              <div style="font-size: 11px; margin: 8px 0;">
+                <div style="color: #95a5a6;">🚩 Taux Flaggy</div>
+                <div style="color: #ecf0f1; font-weight: bold;">${mmoifyNumber(startScore.flaggy, false)}/HR</div>
+              </div>
+            </div>
+            <div>
+              <h4 style="color: #2ecc71; font-size: 14px; margin-bottom: 10px; text-align: center;">📈 APRÈS</h4>
+              <div style="font-size: 11px; margin: 8px 0;">
+                <div style="color: #95a5a6;">🏗️ Construction</div>
+                <div style="color: #2ecc71; font-weight: bold;">${mmoifyNumber(best.score.buildRate, false)}/HR</div>
+                ${buildRatePercent > 0 ? `<div style="color: #3498db; font-size: 10px;">▲ +${buildRatePercent}%</div>` : ''}
+              </div>
+              <div style="font-size: 11px; margin: 8px 0;">
+                <div style="color: #95a5a6;">⭐ Bonus XP</div>
+                <div style="color: #2ecc71; font-weight: bold;">${mmoifyNumber(best.score.expBonus, false)}%</div>
+                ${expBonusPercent > 0 ? `<div style="color: #3498db; font-size: 10px;">▲ +${expBonusPercent}%</div>` : ''}
+              </div>
+              <div style="font-size: 11px; margin: 8px 0;">
+                <div style="color: #95a5a6;">🚩 Taux Flaggy</div>
+                <div style="color: #2ecc71; font-weight: bold;">${mmoifyNumber(best.score.flaggy, false)}/HR</div>
+                ${flaggyPercent > 0 ? `<div style="color: #3498db; font-size: 10px;">▲ +${flaggyPercent}%</div>` : ''}
+              </div>
+            </div>
+          </div>
+        `;
+
+        const stepsContainer = document.getElementById("steps");
+        if (best.etapes && best.etapes.length > 0) {
+          console.log(`📋 Affichage des ${best.etapes.length} étapes`);
+          let etapesHTML = `<h3 style="color: #3498db; font-size: 14px; margin: 0 0 10px 0;">📋 ÉTAPES (${best.etapes.length})</h3>`;
+          best.etapes.forEach((etape, index) => {
+            const nomCourt = etape.engrenage.nom.split('/').pop().replace('.png', '');
+            etapesHTML += `
+              <div style="background: rgba(0,0,0,0.3); padding: 8px; margin: 3px 0; border-radius: 5px; border-left: 3px solid #3498db; font-size: 11px;">
+                <span style="color: #95a5a6; font-weight: bold;">Étape ${index + 1}:</span>
+                <span style="color: #ecf0f1;">Déplacer</span>
+                <span style="color: #2ecc71; font-weight: bold;">${nomCourt}</span>
+                <span style="color: #ecf0f1;">de</span>
+                <span style="color: #e74c3c; font-weight: bold;">[${etape.deX + 1}, ${etape.deY + 1}]</span>
+                <span style="color: #ecf0f1;">vers</span>
+                <span style="color: #2ecc71; font-weight: bold;">[${etape.versX + 1}, ${etape.versY + 1}]</span>
+              </div>
+            `;
+          });
+          stepsContainer.innerHTML = etapesHTML;
+          console.log("✅ Étapes affichées");
+        }
+
+        document.getElementById("solvetext").innerText = "Optimiser";
+        openCogTab();
+
+      } catch (error) {
+        console.error("❌ Erreur:", error);
+        document.getElementById("solvetext").innerText = "Optimiser";
+        alert("Erreur lors de l'optimisation: " + error.message);
+      }
+    };
   </script>
 </body>
 
