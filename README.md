@@ -31,7 +31,11 @@
 - Modification de `index.html` : fonction `load()` corrigée
 - Modification de `InventaireEngrenages.js` : ajout de logs de débogage
 
-[📜 Voir toutes les versions →](PATCHNOTES.md)
+## 📚 Documentation
+
+📋 **[→ Voir le Changelog complet (CHANGELOG.md)](CHANGELOG.md)**
+
 
 ---
+
 
