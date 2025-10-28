@@ -1,4 +1,4 @@
-# 📝 Notes de Version - Jarvis Cog Optimisateur
+# 📝 Changelog - Jarvis Cog Optimisateur
 
 
 ## 🎯 À propos de ce fichier
