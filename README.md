@@ -14,7 +14,7 @@
 - 🚧 Layout 3 colonnes à finaliser
 - 🚧 Affichage des étapes de déplacement
 
-> 📖 **Historique complet des versions :** [PATCHNOTES.md](PATCHNOTES.md)
+> 📖 **Historique complet des versions :** [CHANGELOG.md]
 
 ---
 
@@ -34,3 +34,4 @@
 [📜 Voir toutes les versions →](PATCHNOTES.md)
 
 ---
+
